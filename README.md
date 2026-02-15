@@ -2,13 +2,12 @@
 
 [![CI](https://github.com/Pavelevich/hydra-security/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Pavelevich/hydra-security/actions/workflows/ci.yml)
 
-A research and implementation project for a multi-agent security auditing system with adversarial validation and Solana/Anchor specialization.
+A multi-agent security auditing system with adversarial validation, specialized for Solana/Anchor smart contracts.
 
-## Project Status: Research & Design Phase
+## Project Status: Implementation Complete (Phases 0-6)
 
 ## Quick Links
 
-- [Aardvark Analysis](./research/aardvark-analysis.md) - What is confirmed vs inferred
 - [Architecture](./architecture/swarm-architecture.md) - Multi-agent system design
 - [Solana Specialization](./architecture/solana-agents.md) - Domain-specific Solana/Anchor agents
 - [Sandbox Security Spec](./architecture/sandbox-security-spec.md) - Isolation and hardening requirements
@@ -19,9 +18,9 @@ A research and implementation project for a multi-agent security auditing system
 
 ## Positioning
 
-- OpenAI publicly documents Aardvark as a 4-stage pipeline: threat modeling, commit scanning, sandbox validation, and patching.
-- OpenAI does not publicly disclose every internal architectural detail.
-- This project tests the hypothesis that a specialized multi-agent swarm can improve outcomes in specific domains (especially Solana/Anchor), while remaining self-hostable and transparent.
+- Existing LLM-based security tools typically follow a sequential pipeline approach: threat modeling, commit scanning, sandbox validation, and patching.
+- Hydra tests the hypothesis that a specialized **multi-agent swarm with adversarial validation** (Red Team vs Blue Team vs Judge) can improve detection quality in specific domains (especially Solana/Anchor), while remaining self-hostable and transparent.
+- All claims are backed by reproducible benchmark evidence — no marketing without metrics.
 
 ## V1 Scope
 
@@ -31,7 +30,7 @@ V1 is intentionally narrow:
 - Adversarial validation loop: Red Team vs Blue Team vs Judge
 - Patch generation and patch re-validation for confirmed findings
 
-## Scaffold Quickstart
+## Quickstart
 
 ```bash
 bun install
@@ -58,7 +57,19 @@ bun run daemon
 - Scanner agents are now lifecycle-managed per scan (queued, running, completed/failed/timed_out) and returned in `scan` JSON output as `agent_runs`.
 - Tune lifecycle limits with `HYDRA_MAX_CONCURRENT_AGENTS` and `HYDRA_AGENT_TIMEOUT_MS`.
 
-Trigger API:
+## CLI
+
+```bash
+hydra-audit scan .                              # Full scan
+hydra-audit diff . --base-ref HEAD~3            # Diff-based scan
+hydra-audit report scan-result.json --format sarif --output report.sarif.json
+hydra-audit config --init                       # Create .hydra.json
+hydra-audit config --set min_confidence=60      # Update config
+hydra-audit daemon --port 8787                  # Start HTTP daemon
+hydra-audit github-app --port 3000              # Start GitHub App webhook listener
+```
+
+## Trigger API
 
 ```bash
 curl -sS -X POST http://127.0.0.1:8787/trigger \
@@ -85,11 +96,11 @@ curl -sS http://127.0.0.1:8787/runs/<run_id>
 - See `docker/README.md` for build/run commands and security defaults.
 - Compose definition: `docker/docker-compose.yml`.
 
-## "Better Than Aardvark" Claim Policy
+## Benchmark Claim Policy
 
 No superiority claim is made without benchmark evidence.
 
-To claim "better," results must meet gates defined in `plan/evaluation-protocol.md`:
+To claim "better" than any existing tool, results must meet gates defined in `plan/evaluation-protocol.md`:
 - Detection quality (recall/precision)
 - Exploit confirmation quality
 - Patch acceptance quality

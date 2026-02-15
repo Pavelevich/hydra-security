@@ -199,16 +199,16 @@ GitHub Webhook / Git Hook / CLI Trigger
 
 **Output**: APPROVE / REJECT + reasoning
 
-## Expected Advantages Over Aardvark (Hypothesis)
+## Expected Advantages Over Sequential Pipelines (Hypothesis)
 
-| Dimension | Aardvark (Publicly Described Pipeline) | Our Swarm |
+| Dimension | Sequential LLM Pipeline | Our Swarm |
 |-----------|------------------------|-----------|
 | Speed | Sequential scan | Parallel scanners (Nx faster) |
 | Depth | One context for everything | Dedicated context per agent |
-| False Positives | Self-validates (bias) | Adversarial Red vs Blue |
+| False Positives | Self-validates (bias risk) | Adversarial Red vs Blue |
 | Specialization | Generic | Domain-specific scanners |
 | Transparency | Black box | Full reasoning traces |
-| Customization | None (SaaS product) | Fully configurable pipeline |
+| Customization | SaaS product model | Fully configurable pipeline |
 | Large Repos | Context window limited | Distributed across agents |
 | Patch Quality | Single attempt | Generate + adversarial review |
 

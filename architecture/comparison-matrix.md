@@ -5,22 +5,22 @@
 Note: This matrix mixes current-state facts and target-state hypotheses.
 Items marked as "Target" are goals pending benchmark validation.
 
-### vs OpenAI Aardvark
+### vs Managed LLM Security Pipelines
 
-| Feature | Aardvark | Hydra | Status |
+| Feature | Managed Pipelines | Hydra | Status |
 |---------|----------|-------------|--------|
-| Architecture | Publicly described as staged pipeline | Multi-agent swarm | Different design choices |
+| Architecture | Typically staged sequential pipeline | Multi-agent swarm | Different design choices |
 | Validation | Sandbox exploit confirmation | Adversarial Red/Blue + sandbox | Target advantage |
-| Parallelism | Not fully disclosed | Parallel specialist scanners | Target advantage |
+| Parallelism | Typically sequential | Parallel specialist scanners | Target advantage |
 | Specialization | General-purpose | Domain-specific agents | Target advantage |
-| Solana support | Not publicly positioned for Solana specialization | Native Anchor/Solana agents | Target advantage |
+| Solana support | Not typically Solana-specialized | Native Anchor/Solana agents | Target advantage |
 | Customization | Managed product model | Self-hosted/configurable | Design tradeoff |
 | Transparency | Product-facing explanations | Full internal reasoning traces | Target advantage |
-| Model flexibility | Not publicly disclosed in detail | Multi-model routing | Target advantage |
-| Pricing | Not publicly specified | Estimated ~$3.41/scan (planning) | TBD by telemetry |
-| Maturity | Private beta, backed by OpenAI | In development | Aardvark current advantage |
-| Scale | OpenAI cloud platform | Self-hosted architecture | Different deployment model |
-| Detection rate | 92% reported on OpenAI benchmarks | Target: >92% on defined protocol | TBD by evaluation |
+| Model flexibility | Typically single-model | Multi-model routing | Target advantage |
+| Pricing | Varies by vendor | Estimated ~$3.41/scan (planning) | TBD by telemetry |
+| Maturity | Varies (some in production) | In development | Existing tools' advantage |
+| Scale | Cloud platform | Self-hosted architecture | Different deployment model |
+| Detection rate | ~92% reported in industry benchmarks | Target: >92% on defined protocol | TBD by evaluation |
 
 ### vs Traditional SAST Tools (Semgrep, CodeQL, SonarQube)
 
@@ -76,7 +76,7 @@ Items marked as "Target" are goals pending benchmark validation.
    Human Auditors  ●    |    ● Hydra
                         |
                         |
-                        |    ● Aardvark
+                        |    ● Managed LLM Pipelines
                         |
                         |
    ─────────────────────┼──────────────────

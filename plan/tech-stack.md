@@ -164,7 +164,7 @@ hydra-security/
 │   │   ├── solana.rs         # Solana test validator management
 │   │   └── executor.rs       # Run exploit in sandbox
 │   ├── llm/
-│   │   ├── client.rs         # Claude/OpenAI API client
+│   │   ├── client.rs         # Claude API client
 │   │   ├── prompts/          # Prompt templates per agent
 │   │   ├── router.rs         # Model selection per task
 │   │   └── parser.rs         # Response parsing

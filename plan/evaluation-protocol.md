@@ -13,7 +13,7 @@ Allowed claims:
 - "Better than baseline X on dataset Y with metric Z."
 
 Disallowed claims:
-- "Better than Aardvark overall" without head-to-head comparable evidence.
+- "Better than [specific tool] overall" without head-to-head comparable evidence.
 
 ## Scope
 
@@ -30,7 +30,7 @@ Evaluate against at least these baselines:
 3. Human adjudication ground truth (for disputed cases)
 
 Reference-only benchmark:
-- Publicly reported Aardvark metrics may be used for context, not as direct head-to-head proof.
+- Publicly reported industry metrics may be used for context, not as direct head-to-head proof.
 
 ## Dataset Design
 

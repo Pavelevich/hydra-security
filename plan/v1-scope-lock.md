@@ -31,7 +31,7 @@ Define the strict delivery boundary for Hydra V1 so execution stays narrow, benc
 - Automated patch generation + patch re-validation
 - Production GitHub App / PR bot integration
 - Cost telemetry and median scan time SLA enforcement
-- Public “better than Aardvark overall” claims
+- Public "better than [specific tool] overall" claims
 
 ## V1 Done Criteria (Pilot Entry)
 
@@ -56,4 +56,4 @@ Allowed statement pattern:
 - “Hydra outperforms baseline X on dataset Y for metric Z under this protocol.”
 
 Disallowed statement pattern:
-- “Hydra is better than Aardvark overall.”
+- "Hydra is better than [specific tool] overall."

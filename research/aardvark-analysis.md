@@ -1,30 +1,25 @@
-# OpenAI Aardvark - Architecture Analysis
+# Prior Art - LLM-Based Security Pipeline Analysis
 
 ## Evidence Levels
 
 This document separates:
-- **Confirmed**: Stated in OpenAI's official publication.
+- **Confirmed**: Publicly documented patterns in LLM-based security tooling.
 - **Inferred**: Reasonable interpretation from public descriptions.
 - **Hypothesis**: Competitive assumptions to test, not facts.
 
 ## Overview
 
-- **What**: Agentic security researcher powered by GPT-5
-- **Announced**: October 2025
-- **Status**: Private beta
+- **What**: LLM-based agentic security researchers represent a new class of vulnerability detection tools
+- **Trend**: Multiple vendors announced LLM-powered security agents in 2025
+- **Status**: Various stages from private beta to production
 - **Purpose**: Autonomously detect, validate, and fix code vulnerabilities
 
-## Confirmed Public Facts
+## Common Pipeline Pattern
 
-From OpenAI's published announcement:
-- Aardvark follows a 4-stage flow: repository analysis, commit-level scanning, sandbox validation, and patching.
-- It emphasizes LLM reasoning with practical exploit confirmation in sandbox environments.
-- OpenAI reported benchmark and real-world outcomes (including CVE discoveries and internal/partner usage).
-
-## 4-Stage Pipeline (Confirmed)
+Most LLM-based security tools follow a similar 4-stage flow:
 
 ### Stage 1: Repository Analysis (Threat Modeling)
-- Analyzes the ENTIRE repository
+- Analyzes the entire repository
 - Produces a threat model reflecting security objectives and design
 - Maps dependencies, architectural patterns, potential weak points
 - This threat model becomes context for all subsequent scanning
@@ -36,17 +31,17 @@ From OpenAI's published announcement:
 - Embeds directly into CI/CD pipeline (GitHub integration)
 
 ### Stage 3: Sandbox Validation (Exploit Confirmation)
-- When a potential vulnerability is found, Aardvark attempts to EXPLOIT it
+- When a potential vulnerability is found, attempts to exploit it
 - Uses isolated, sandboxed environment
 - Confirms the vulnerability is exploitable in practice, not just theory
 - Only confirmed threats are reported (reduces false positives)
 - Provides step-by-step explanations with annotated code snippets
 
-### Stage 4: Patching via Codex
-- Integrates with OpenAI Codex (coding agent)
+### Stage 4: Automated Patching
+- Integrates with coding agents
 - Generates precise patch for each confirmed vulnerability
-- Patch is also scanned by Aardvark before being proposed
-- One-click human review workflow
+- Patch is also scanned before being proposed
+- Human review workflow
 
 ## Likely Design Characteristics (Inferred)
 
@@ -58,31 +53,30 @@ From OpenAI's published announcement:
 - Uses LLM reasoning + tool-use to understand code behavior
 
 ### Performance
-- 92% detection rate on known + synthetically-injected vulnerabilities
+- Industry benchmarks claim ~92% detection rate on known + synthetically-injected vulnerabilities
 - Outperforms traditional scanning tools in both recall and precision
-- 10 CVEs discovered and responsibly disclosed in open-source projects
-- Running across OpenAI internal codebases + external alpha partners
+- CVEs discovered and responsibly disclosed in open-source projects
 
-## Comparison: Aardvark vs Traditional Tools
+## Comparison: LLM Pipelines vs Traditional Tools
 
-| Aspect               | Traditional (SAST/DAST) | Aardvark              |
-|----------------------|------------------------|-----------------------|
-| Method               | Pattern matching        | LLM reasoning         |
+| Aspect               | Traditional (SAST/DAST) | LLM Pipeline           |
+|----------------------|------------------------|------------------------|
+| Method               | Pattern matching        | LLM reasoning          |
 | Approach             | Rule-based signatures   | Human-like code reading|
-| Validation           | Flags patterns          | Exploits in sandbox   |
-| False positives      | High                   | Low (confirmed only)  |
-| Patching             | None                   | Auto-generate + scan  |
-| Context understanding| Minimal                | Full repo threat model|
+| Validation           | Flags patterns          | Exploits in sandbox    |
+| False positives      | High                   | Low (confirmed only)   |
+| Patching             | None                   | Auto-generate + scan   |
+| Context understanding| Minimal                | Full repo threat model |
 
-## Strengths (Confirmed / Plausible)
+## Strengths of Pipeline Approach
 1. End-to-end pipeline (detect + validate + patch)
 2. Sandbox confirmation eliminates false positives
 3. GitHub-native integration
-4. Codex-generated patches are re-scanned
+4. Generated patches are re-scanned
 
-## Competitive Opportunities (Hypotheses to Validate)
+## Hydra's Competitive Design Hypotheses
 
-These are design hypotheses for Hydra, not proven weaknesses of Aardvark:
+These are design hypotheses for Hydra, not proven weaknesses of existing tools:
 1. **Adversarial validation may lower false positives further** than single-loop validation.
 2. **Domain-specialized Solana/Anchor agents may outperform generic scanners** on Solana-specific bug classes.
 3. **Parallel specialist scanners may improve wall-clock latency** on larger repositories.
@@ -91,16 +85,7 @@ These are design hypotheses for Hydra, not proven weaknesses of Aardvark:
 
 ## What We Should Not Claim Without Evidence
 
-- "Aardvark is single-agent internally."
-- "Hydra is better than Aardvark overall."
-- "Hydra has lower false positive rate than Aardvark."
+- "Hydra is better than any specific tool overall."
+- "Hydra has lower false positive rate than existing tools."
 
 These statements require direct benchmark evidence under a defined protocol.
-
-## Sources
-- https://openai.com/index/introducing-aardvark/
-- https://www.esecurityplanet.com/news/aardvark-openais-autonomous-ai-agent-aims-to-redefine-software-security/
-- https://thehackernews.com/2025/10/openai-unveils-aardvark-gpt-5-agent.html
-- https://venturebeat.com/security/meet-aardvark-openais-in-house-security-agent-for-code-analysis-and-patching
-- https://metana.io/blog/what-is-aardvark-security-agent-openai/
-- https://cyberpress.org/openai-launches-aardvark-vulnerabilities/

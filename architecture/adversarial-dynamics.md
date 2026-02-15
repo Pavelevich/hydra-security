@@ -4,7 +4,7 @@
 
 This is the core design bet of the swarm approach.
 
-Public Aardvark documentation does not fully disclose internal agent topology. Regardless of Aardvark internals, any pipeline where the same reasoning loop both finds and validates issues can have **confirmation bias** risk.
+Most LLM-based security tools do not fully disclose internal agent topology. Regardless of any specific tool's internals, any pipeline where the same reasoning loop both finds and validates issues can have **confirmation bias** risk.
 
 Our approach introduces **adversarial tension**: two agents with opposing objectives, judged by a neutral third party.
 
