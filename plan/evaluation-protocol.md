@@ -100,6 +100,7 @@ Calibration metrics:
 
 ### "Stronger Than Baseline" Gate
 - Recall and precision must both exceed single-agent baseline by >= 10% relative.
+- If baseline precision is saturated (>= 0.99), enforce precision non-regression instead of relative gain.
 - No regression in patch non-regression rate.
 
 ## Report Template

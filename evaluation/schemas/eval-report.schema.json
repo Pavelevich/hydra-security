@@ -26,12 +26,27 @@
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["repo_id", "tp", "fp", "fn", "precision", "recall"],
+              "required": [
+                "repo_id",
+                "tp",
+                "fp",
+                "fn",
+                "expected_count",
+                "predicted_count",
+                "is_clean_control",
+                "has_clean_fp",
+                "precision",
+                "recall"
+              ],
               "properties": {
                 "repo_id": { "type": "string" },
                 "tp": { "type": "integer", "minimum": 0 },
                 "fp": { "type": "integer", "minimum": 0 },
                 "fn": { "type": "integer", "minimum": 0 },
+                "expected_count": { "type": "integer", "minimum": 0 },
+                "predicted_count": { "type": "integer", "minimum": 0 },
+                "is_clean_control": { "type": "boolean" },
+                "has_clean_fp": { "type": "boolean" },
                 "precision": { "type": "number", "minimum": 0, "maximum": 1 },
                 "recall": { "type": "number", "minimum": 0, "maximum": 1 }
               },
@@ -40,13 +55,25 @@
           },
           "totals": {
             "type": "object",
-            "required": ["tp", "fp", "fn", "precision", "recall"],
+            "required": [
+              "tp",
+              "fp",
+              "fn",
+              "precision",
+              "recall",
+              "clean_repo_count",
+              "clean_repo_fp_count",
+              "clean_repo_fp_rate"
+            ],
             "properties": {
               "tp": { "type": "integer", "minimum": 0 },
               "fp": { "type": "integer", "minimum": 0 },
               "fn": { "type": "integer", "minimum": 0 },
               "precision": { "type": "number", "minimum": 0, "maximum": 1 },
-              "recall": { "type": "number", "minimum": 0, "maximum": 1 }
+              "recall": { "type": "number", "minimum": 0, "maximum": 1 },
+              "clean_repo_count": { "type": "integer", "minimum": 0 },
+              "clean_repo_fp_count": { "type": "integer", "minimum": 0 },
+              "clean_repo_fp_rate": { "type": "number", "minimum": 0, "maximum": 1 }
             },
             "additionalProperties": false
           }

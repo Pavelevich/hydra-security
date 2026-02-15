@@ -10,37 +10,37 @@
 ## Phase 0: Scope Lock + Evaluation Harness (Week 1)
 
 ### 0.1 V1 Scope Lock
-- [ ] Lock V1 wedge to Solana/Anchor
-- [ ] Lock V1 scanners to: Account Validation, CPI, PDA
-- [ ] Define non-goals for V1 (defer broad generic scanner set)
-- [ ] Define "done" criteria for pilot
+- [x] Lock V1 wedge to Solana/Anchor
+- [x] Lock V1 scanners to: Account Validation, CPI, PDA
+- [x] Define non-goals for V1 (defer broad generic scanner set)
+- [x] Define "done" criteria for pilot
 
 ### 0.2 Evaluation Protocol
-- [ ] Finalize `plan/evaluation-protocol.md`
-- [ ] Build dataset manifests (D1-D4)
-- [ ] Implement common finding schema
-- [ ] Implement baseline runner (deterministic + single-agent)
-- [ ] Implement metric computation script
+- [x] Finalize `plan/evaluation-protocol.md`
+- [x] Build dataset manifests (D1-D4)
+- [x] Implement common finding schema
+- [x] Implement baseline runner (deterministic + single-agent)
+- [x] Implement metric computation script
 
 ## Phase 1: Foundation (Week 1-2)
 
 ### 1.1 Project Setup
-- [ ] Initialize repo (Rust + TypeScript monorepo)
-- [ ] Define agent communication protocol (JSON schema)
-- [ ] Set up CI/CD (GitHub Actions)
-- [ ] Docker setup for sandbox environments
+- [x] Initialize repo (Rust + TypeScript monorepo)
+- [x] Define agent communication protocol (JSON schema)
+- [x] Set up CI/CD (GitHub Actions)
+- [x] Docker setup for sandbox environments
 
 ### 1.2 Core Orchestrator
-- [ ] Build orchestrator daemon (receives triggers, spawns agents)
+- [x] Build orchestrator daemon (receives triggers, spawns agents)
 - [ ] Git integration (parse commits, diffs, PR events)
 - [ ] Threat model storage and versioning
 - [ ] Agent lifecycle management (spawn, monitor, collect results)
-- [ ] Result aggregation and deduplication
+- [x] Result aggregation and deduplication
 
 ### 1.3 Hybrid Detection Layer
-- [ ] Add deterministic signal adapters (rules/lints/static checks)
-- [ ] Define merge strategy for deterministic + LLM findings
-- [ ] Add normalization layer into candidate pool
+- [x] Add deterministic signal adapters (rules/lints/static checks)
+- [x] Define merge strategy for deterministic + LLM findings
+- [x] Add normalization layer into candidate pool
 
 ### 1.4 LLM Integration Layer
 - [ ] Claude API client with retry/fallback
@@ -52,14 +52,14 @@
 ## Phase 2: Scanner Agents (Week 2-4)
 
 ### 2.1 Solana V1 Scanners
-- [ ] Account Validation Agent
-- [ ] CPI Security Agent
-- [ ] PDA Security Agent
+- [x] Account Validation Agent
+- [x] CPI Security Agent
+- [x] PDA Security Agent
 
 ### 2.2 Scanner Testing
-- [ ] Create "golden" repos with known vulnerabilities
-- [ ] Benchmark each scanner independently
-- [ ] Measure recall and precision per vulnerability class
+- [x] Create "golden" repos with known vulnerabilities
+- [x] Benchmark each scanner independently
+- [x] Measure recall and precision per vulnerability class
 - [ ] Tune prompts based on results
 
 ## Phase 3: Adversarial Validation (Week 4-6)

@@ -1,0 +1,38 @@
+name: full-eval
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.8"
+
+      - name: Install Dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Full Phase 0 Evaluation (D1-D4)
+        run: bun run eval:phase0
+
+      - name: V1 Gate Check
+        run: bun run eval:gates
+
+      - name: Upload Evaluation Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: evaluation-reports
+          path: evaluation/reports/*.json
+          if-no-files-found: warn

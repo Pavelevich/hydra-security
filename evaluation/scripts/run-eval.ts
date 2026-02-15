@@ -3,6 +3,7 @@ import path from "node:path";
 import { runFullScan } from "../../src/orchestrator/run-scan";
 import type { DatasetManifest, EvalReport, Finding, RepoScore, SystemScore } from "../../src/types";
 import { runSingleAgentBaseline } from "../baseline/single-agent-baseline";
+import { runDeterministicBaseline } from "../baseline/deterministic-baseline";
 
 function getArg(flag: string): string | undefined {
   const idx = process.argv.findIndex((arg: string) => arg === flag);
@@ -43,8 +44,21 @@ function scoreRepo(
   const fn = expectedSet.size - tp;
   const precision = tp + fp === 0 ? 1 : tp / (tp + fp);
   const recall = tp + fn === 0 ? 1 : tp / (tp + fn);
+  const isCleanControl = expectedSet.size === 0;
+  const hasCleanFp = isCleanControl && fp > 0;
 
-  return { repo_id: repoId, tp, fp, fn, precision, recall };
+  return {
+    repo_id: repoId,
+    tp,
+    fp,
+    fn,
+    expected_count: expectedSet.size,
+    predicted_count: predictedSet.size,
+    is_clean_control: isCleanControl,
+    has_clean_fp: hasCleanFp,
+    precision,
+    recall
+  };
 }
 
 function finalizeSystem(systemId: string, repos: RepoScore[]): SystemScore {
@@ -53,11 +67,24 @@ function finalizeSystem(systemId: string, repos: RepoScore[]): SystemScore {
   const fn = repos.reduce((acc, v) => acc + v.fn, 0);
   const precision = tp + fp === 0 ? 1 : tp / (tp + fp);
   const recall = tp + fn === 0 ? 1 : tp / (tp + fn);
+  const cleanRepos = repos.filter((repo) => repo.is_clean_control);
+  const cleanRepoCount = cleanRepos.length;
+  const cleanRepoFpCount = cleanRepos.filter((repo) => repo.has_clean_fp).length;
+  const cleanRepoFpRate = cleanRepoCount === 0 ? 0 : cleanRepoFpCount / cleanRepoCount;
 
   return {
     system_id: systemId,
     repos,
-    totals: { tp, fp, fn, precision, recall }
+    totals: {
+      tp,
+      fp,
+      fn,
+      precision,
+      recall,
+      clean_repo_count: cleanRepoCount,
+      clean_repo_fp_count: cleanRepoFpCount,
+      clean_repo_fp_rate: cleanRepoFpRate
+    }
   };
 }
 
@@ -69,18 +96,23 @@ async function main(): Promise<void> {
   const manifest = JSON.parse(manifestRaw) as DatasetManifest;
 
   const hydraRepoScores: RepoScore[] = [];
-  const baselineRepoScores: RepoScore[] = [];
+  const singleAgentRepoScores: RepoScore[] = [];
+  const deterministicRepoScores: RepoScore[] = [];
 
   for (const repo of manifest.repos) {
     const repoRoot = path.resolve(process.cwd(), repo.path);
     const hydraScan = await runFullScan(repoRoot);
-    const baselineFindings = await runSingleAgentBaseline(repoRoot);
+    const singleAgentFindings = await runSingleAgentBaseline(repoRoot);
+    const deterministicFindings = await runDeterministicBaseline(repoRoot);
 
     hydraRepoScores.push(
       scoreRepo(repo.id, repoRoot, repo.expected_findings, hydraScan.findings)
     );
-    baselineRepoScores.push(
-      scoreRepo(repo.id, repoRoot, repo.expected_findings, baselineFindings)
+    singleAgentRepoScores.push(
+      scoreRepo(repo.id, repoRoot, repo.expected_findings, singleAgentFindings)
+    );
+    deterministicRepoScores.push(
+      scoreRepo(repo.id, repoRoot, repo.expected_findings, deterministicFindings)
     );
   }
 
@@ -89,11 +121,12 @@ async function main(): Promise<void> {
     dataset_id: manifest.dataset_id,
     systems: [
       finalizeSystem("hydra-swarm-v1", hydraRepoScores),
-      finalizeSystem("baseline-single-agent", baselineRepoScores)
+      finalizeSystem("baseline-single-agent", singleAgentRepoScores),
+      finalizeSystem("baseline-deterministic", deterministicRepoScores)
     ],
     notes: [
-      "This is a scaffold runner with seeded datasets.",
-      "Use this pipeline to integrate real scanners, adjudication, and confidence intervals."
+      "Scaffold evaluator for seeded datasets and baseline comparisons.",
+      "Includes clean-control proxy metric: clean_repo_fp_rate (repos with expected=0 that produced FP)."
     ]
   };
 
@@ -106,7 +139,7 @@ async function main(): Promise<void> {
   console.log(`Evaluation completed for dataset: ${manifest.dataset_id}`);
   for (const system of report.systems) {
     console.log(
-      `${system.system_id}: precision=${system.totals.precision.toFixed(3)} recall=${system.totals.recall.toFixed(3)} (tp=${system.totals.tp}, fp=${system.totals.fp}, fn=${system.totals.fn})`
+      `${system.system_id}: precision=${system.totals.precision.toFixed(3)} recall=${system.totals.recall.toFixed(3)} clean_fp_rate=${system.totals.clean_repo_fp_rate.toFixed(3)} (tp=${system.totals.tp}, fp=${system.totals.fp}, fn=${system.totals.fn})`
     );
   }
   console.log(`Report written: ${outPath}`);

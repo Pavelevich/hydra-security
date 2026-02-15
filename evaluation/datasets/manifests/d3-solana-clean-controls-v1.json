@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0.0",
+  "dataset_id": "d3-solana-clean-controls-v1",
+  "description": "Clean control repositories for estimating false-positive behavior in Solana/Anchor scope.",
+  "created_at": "2026-02-15",
+  "repos": [
+    {
+      "id": "repo-template-b",
+      "path": "golden_repos/solana_seeded_v1/repo-template-b",
+      "language": "rust",
+      "framework": "anchor",
+      "expected_findings": []
+    },
+    {
+      "id": "repo-template-e",
+      "path": "golden_repos/solana_seeded_v2/repo-template-e",
+      "language": "rust",
+      "framework": "anchor",
+      "expected_findings": []
+    },
+    {
+      "id": "repo-control-f",
+      "path": "golden_repos/solana_controls_v1/repo-control-f",
+      "language": "rust",
+      "framework": "anchor",
+      "expected_findings": []
+    }
+  ]
+}

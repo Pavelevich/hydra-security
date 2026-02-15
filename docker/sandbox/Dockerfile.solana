@@ -1,0 +1,10 @@
+ARG SOLANA_IMAGE=solanalabs/solana:v1.18.26
+FROM ${SOLANA_IMAGE}
+
+RUN mkdir -p /home/hydra /workspace && chown -R 65532:65532 /home/hydra /workspace
+
+WORKDIR /workspace
+USER 65532:65532
+ENV HOME=/home/hydra
+
+CMD ["solana-test-validator", "--ledger", "/tmp/ledger", "--reset", "--rpc-bind-address", "127.0.0.1", "--bind-address", "127.0.0.1", "--quiet"]

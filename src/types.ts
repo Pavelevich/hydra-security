@@ -65,20 +65,29 @@ export interface RepoScore {
   tp: number;
   fp: number;
   fn: number;
+  expected_count: number;
+  predicted_count: number;
+  is_clean_control: boolean;
+  has_clean_fp: boolean;
   precision: number;
   recall: number;
+}
+
+export interface ScoreTotals {
+  tp: number;
+  fp: number;
+  fn: number;
+  precision: number;
+  recall: number;
+  clean_repo_count: number;
+  clean_repo_fp_count: number;
+  clean_repo_fp_rate: number;
 }
 
 export interface SystemScore {
   system_id: string;
   repos: RepoScore[];
-  totals: {
-    tp: number;
-    fp: number;
-    fn: number;
-    precision: number;
-    recall: number;
-  };
+  totals: ScoreTotals;
 }
 
 export interface EvalReport {

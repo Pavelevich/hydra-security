@@ -32,8 +32,5 @@ jobs:
       - name: Scan
         run: bun run scan
 
-      - name: Evaluate D1
-        run: bun run eval:d1
-
-      - name: Evaluate D2
-        run: bun run eval:d2
+      - name: Evaluate Core Datasets (D1+D2)
+        run: bun run eval:core
