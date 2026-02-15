@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+target/
+vendor/
+
+# Build artifacts
+dist/
+build/
+*.wasm
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite
+
+# Test artifacts
+coverage/
+.nyc_output/
+
+# Secrets
+*.key
+*.pem
+*.p12
+*.jks
+credentials/
+
+# Claude Code local files
+CLAUDE.md
+**/CLAUDE.md

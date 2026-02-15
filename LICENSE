@@ -1,0 +1,103 @@
+TETSUO CORP. SOURCE-AVAILABLE LICENSE
+Version 1.0, February 2026
+
+Copyright (c) 2026 TETSUO CORP. All rights reserved.
+
+TERMS AND CONDITIONS
+
+1. DEFINITIONS
+
+"Software" means the source code, documentation, configuration files,
+and all associated materials in this repository.
+
+"Commercial Use" means any use of the Software that directly or
+indirectly generates revenue, including but not limited to: selling
+the Software or derivative works, offering the Software as a paid
+service (SaaS, PaaS, or similar), using the Software to provide paid
+consulting or audit services, or incorporating the Software into a
+commercial product.
+
+"Derivative Work" means any work that is based on or derived from
+the Software, including modifications, translations, adaptations,
+or any other form in which the Software may be recast, transformed,
+or adapted.
+
+2. GRANT OF LICENSE
+
+Subject to the terms of this License, TETSUO CORP. grants you a
+limited, non-exclusive, non-transferable, revocable license to:
+
+  a) View and study the source code for personal educational purposes.
+  b) Fork and modify the Software for personal, non-commercial
+     research and experimentation.
+  c) Reference the Software's architecture and design concepts in
+     academic or educational contexts with proper attribution.
+
+3. RESTRICTIONS
+
+You MAY NOT, without prior written authorization from TETSUO CORP.:
+
+  a) Use the Software or any Derivative Work for Commercial Use.
+  b) Sell, sublicense, rent, lease, or lend the Software.
+  c) Offer the Software as a hosted or managed service to third parties.
+  d) Distribute the Software or Derivative Works to third parties
+     for their Commercial Use.
+  e) Remove or alter any copyright notices, license headers, or
+     attribution notices in the Software.
+  f) Use the Software to compete with products or services offered
+     by TETSUO CORP.
+  g) Claim ownership of the Software or any Derivative Work.
+  h) Use the name "AgenC", "TETSUO", "TETSUO CORP.", or associated
+     trademarks without written permission.
+
+4. INTELLECTUAL PROPERTY
+
+All intellectual property rights in the Software, including but not
+limited to copyrights, patents, trade secrets, and trademarks, are
+and shall remain the exclusive property of TETSUO CORP.
+
+No rights are granted under any patents owned or controlled by
+TETSUO CORP. This License does not grant permission to use the
+trade names, trademarks, service marks, or product names of
+TETSUO CORP.
+
+5. CONTRIBUTIONS
+
+Any contributions submitted to this repository shall be subject to
+the terms of this License. By submitting a contribution, you agree
+to assign all intellectual property rights in the contribution to
+TETSUO CORP. and represent that you have the right to do so.
+
+6. NO WARRANTY
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL TETSUO CORP. BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+7. TERMINATION
+
+This License is effective until terminated. TETSUO CORP. may
+terminate this License at any time without notice. Upon termination,
+you must destroy all copies of the Software in your possession.
+
+Your rights under this License will terminate automatically if you
+fail to comply with any of its terms.
+
+8. GOVERNING LAW
+
+This License shall be governed by and construed in accordance with
+applicable intellectual property laws. Any disputes arising under
+this License shall be resolved in the courts of competent
+jurisdiction as determined by TETSUO CORP.
+
+9. COMMERCIAL LICENSING
+
+For commercial licensing inquiries, contact: legal@tetsuo.corp
+
+---
+
+TETSUO CORP. 2026 - All Rights Reserved
