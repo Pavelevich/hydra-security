@@ -20,26 +20,49 @@ server.registerTool(
   "hydra_scan",
   {
     description:
-      "Run a full Hydra security scan on a Solana/Anchor repository. Returns a markdown report with all findings.",
+      "Run a full Hydra security scan on a Solana/Anchor repository. " +
+      "Set adversarial=true to activate the Red Team / Blue Team / Judge validation swarm (requires ANTHROPIC_API_KEY). " +
+      "Set patch=true to also generate and verify patches for confirmed findings.",
     inputSchema: {
       target_path: z
         .string()
         .describe("Absolute or relative path to the repository to scan"),
+      adversarial: z
+        .boolean()
+        .optional()
+        .describe("Run adversarial Red/Blue/Judge validation on findings (requires ANTHROPIC_API_KEY)"),
+      patch: z
+        .boolean()
+        .optional()
+        .describe("Generate and verify patches for confirmed findings (requires adversarial=true)"),
     },
   },
-  async ({ target_path }) => {
+  async ({ target_path, adversarial, patch }) => {
     const resolved = path.isAbsolute(target_path)
       ? target_path
       : path.resolve(PROJECT_ROOT, target_path);
 
     try {
-      const result = await runFullScan(resolved);
+      const result = await runFullScan(resolved, {
+        adversarial: adversarial ?? false,
+        patch: patch ?? false,
+      });
       const report = toMarkdownReport(result);
-      const summary = `Found ${result.findings.length} finding(s) across ${result.agent_runs?.length ?? 0} agent runs.`;
+
+      const parts: string[] = [];
+      parts.push(`Found ${result.findings.length} finding(s) across ${result.agent_runs?.length ?? 0} agent runs.`);
+      if (result.adversarial_results?.length) {
+        const confirmed = result.adversarial_results.filter((r) => r.judge?.verdict === "confirmed").length;
+        parts.push(`Adversarial validation: ${confirmed}/${result.adversarial_results.length} confirmed.`);
+      }
+      if (result.patch_results?.length) {
+        const approved = result.patch_results.filter((r) => r.status === "patched_and_verified").length;
+        parts.push(`Patches: ${approved}/${result.patch_results.length} approved.`);
+      }
 
       return {
         content: [
-          { type: "text" as const, text: summary },
+          { type: "text" as const, text: parts.join(" ") },
           { type: "text" as const, text: report },
         ],
       };
@@ -62,7 +85,8 @@ server.registerTool(
   "hydra_diff_scan",
   {
     description:
-      "Run a differential Hydra security scan on only the files changed since a git reference.",
+      "Run a differential Hydra security scan on only the files changed since a git reference. " +
+      "Set adversarial=true to validate findings with the Red/Blue/Judge swarm.",
     inputSchema: {
       target_path: z
         .string()
@@ -75,22 +99,45 @@ server.registerTool(
         .string()
         .optional()
         .describe("Git head reference (defaults to working directory)"),
+      adversarial: z
+        .boolean()
+        .optional()
+        .describe("Run adversarial Red/Blue/Judge validation on findings (requires ANTHROPIC_API_KEY)"),
+      patch: z
+        .boolean()
+        .optional()
+        .describe("Generate and verify patches for confirmed findings"),
     },
   },
-  async ({ target_path, base_ref, head_ref }) => {
+  async ({ target_path, base_ref, head_ref, adversarial, patch }) => {
     const resolved = path.isAbsolute(target_path)
       ? target_path
       : path.resolve(PROJECT_ROOT, target_path);
 
     try {
-      const result = await runDiffScan(resolved, { baseRef: base_ref, headRef: head_ref });
+      const result = await runDiffScan(resolved, {
+        baseRef: base_ref,
+        headRef: head_ref,
+        adversarial: adversarial ?? false,
+        patch: patch ?? false,
+      });
       const report = toMarkdownReport(result);
       const changedCount = result.target.diff?.changed_files?.length ?? 0;
-      const summary = `Diff scan: ${changedCount} changed file(s), ${result.findings.length} finding(s).`;
+
+      const parts: string[] = [];
+      parts.push(`Diff scan: ${changedCount} changed file(s), ${result.findings.length} finding(s).`);
+      if (result.adversarial_results?.length) {
+        const confirmed = result.adversarial_results.filter((r) => r.judge?.verdict === "confirmed").length;
+        parts.push(`Adversarial: ${confirmed}/${result.adversarial_results.length} confirmed.`);
+      }
+      if (result.patch_results?.length) {
+        const approved = result.patch_results.filter((r) => r.status === "patched_and_verified").length;
+        parts.push(`Patches: ${approved}/${result.patch_results.length} approved.`);
+      }
 
       return {
         content: [
-          { type: "text" as const, text: summary },
+          { type: "text" as const, text: parts.join(" ") },
           { type: "text" as const, text: report },
         ],
       };
@@ -217,26 +264,56 @@ server.registerTool(
       "List all available Hydra security scanners and the vulnerability classes they detect.",
   },
   async () => {
+    const hasApiKey = !!process.env.ANTHROPIC_API_KEY;
     const scanners = [
       {
         id: "scanner.solana.account-validation",
+        type: "pattern",
+        active: true,
         vuln_classes: ["missing_signer_check", "missing_has_one", "account_type_confusion"],
-        description: "Detects missing signer checks, relationship constraints, and account type confusion in Solana/Anchor programs.",
+        description: "Detects missing signer checks, relationship constraints, and account type confusion via regex patterns with context-aware mitigation.",
       },
       {
         id: "scanner.solana.cpi",
+        type: "pattern",
+        active: true,
         vuln_classes: ["arbitrary_cpi", "cpi_signer_seed_bypass", "cpi_reentrancy"],
-        description: "Detects unsafe cross-program invocation patterns including arbitrary CPI targets and reentrancy.",
+        description: "Detects unsafe cross-program invocation patterns including arbitrary CPI targets, reentrancy, and signer seed bypass.",
       },
       {
         id: "scanner.solana.pda",
+        type: "pattern",
+        active: true,
         vuln_classes: ["non_canonical_bump", "seed_collision", "attacker_controlled_seed"],
-        description: "Detects PDA derivation issues including non-canonical bumps and attacker-controlled seeds.",
+        description: "Detects PDA derivation issues including non-canonical bumps, missing seed domain separation, and attacker-controlled seeds.",
       },
       {
         id: "signal.deterministic.adapters",
-        vuln_classes: [],
-        description: "Rule-based deterministic signal detection (lint-level checks).",
+        type: "deterministic",
+        active: true,
+        vuln_classes: ["missing_signer_check", "arbitrary_cpi", "non_canonical_bump"],
+        description: "Rule-based deterministic signal detection (regex lint-level checks).",
+      },
+      {
+        id: "llm.scanner.solana.account-validation",
+        type: "llm",
+        active: hasApiKey,
+        vuln_classes: ["missing_signer_check", "missing_has_one", "account_type_confusion"],
+        description: "LLM-powered deep analysis of account validation patterns. Requires ANTHROPIC_API_KEY.",
+      },
+      {
+        id: "llm.scanner.solana.cpi",
+        type: "llm",
+        active: hasApiKey,
+        vuln_classes: ["arbitrary_cpi", "cpi_signer_seed_bypass", "cpi_reentrancy"],
+        description: "LLM-powered deep analysis of CPI patterns. Requires ANTHROPIC_API_KEY.",
+      },
+      {
+        id: "llm.scanner.solana.pda",
+        type: "llm",
+        active: hasApiKey,
+        vuln_classes: ["non_canonical_bump", "seed_collision", "attacker_controlled_seed"],
+        description: "LLM-powered deep analysis of PDA derivation patterns. Requires ANTHROPIC_API_KEY.",
       },
     ];
 
