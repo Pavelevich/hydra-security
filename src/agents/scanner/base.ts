@@ -69,3 +69,66 @@ export function makeFinding(input: {
     evidence: input.evidence
   };
 }
+
+export interface PatternRule {
+  vulnClass: VulnClass;
+  severity: Severity;
+  confidence: number;
+  title: string;
+  description: string;
+  /** Regex to match on a single line */
+  pattern: RegExp;
+  /** If any of these appear within contextLines of the match, suppress the finding */
+  mitigations?: RegExp[];
+  /** Lines before/after to check for mitigations (default: 5) */
+  contextLines?: number;
+}
+
+export function scanFileWithPatterns(
+  scannerId: string,
+  filePath: string,
+  content: string,
+  rules: PatternRule[]
+): Finding[] {
+  const lines = content.split(/\r?\n/);
+  const findings: Finding[] = [];
+  const seen = new Set<string>();
+
+  for (const rule of rules) {
+    for (let i = 0; i < lines.length; i++) {
+      if (!rule.pattern.test(lines[i])) continue;
+
+      // Deduplicate same vuln class at same line
+      const dedup = `${rule.vulnClass}:${i}`;
+      if (seen.has(dedup)) continue;
+
+      // Check mitigations in context window
+      if (rule.mitigations && rule.mitigations.length > 0) {
+        const window = rule.contextLines ?? 5;
+        const start = Math.max(0, i - window);
+        const end = Math.min(lines.length, i + window + 1);
+        const context = lines.slice(start, end).join("\n");
+
+        if (rule.mitigations.some((m) => m.test(context))) continue;
+      }
+
+      seen.add(dedup);
+      const matched = lines[i].trim();
+      findings.push(
+        makeFinding({
+          scannerId,
+          vulnClass: rule.vulnClass,
+          severity: rule.severity,
+          confidence: rule.confidence,
+          file: filePath,
+          line: i + 1,
+          title: rule.title,
+          description: rule.description,
+          evidence: matched.length > 120 ? `${matched.slice(0, 117)}...` : matched
+        })
+      );
+    }
+  }
+
+  return findings;
+}

@@ -7,7 +7,7 @@ const severityRank: Record<Finding["severity"], number> = {
   LOW: 1
 };
 
-const MIN_UNCORROBORATED_CONFIDENCE = 80;
+const MIN_UNCORROBORATED_CONFIDENCE = 50;
 
 function mergeEvidence(a: string, b: string): string {
   if (a === b) {
