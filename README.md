@@ -43,6 +43,10 @@ bun run daemon
 - `bun run ci` runs the same local validation sequence as CI: typecheck + scan + D1/D2 evaluation.
 - `bun run eval:core` runs the fast benchmark set (D1+D2), used by CI.
 - `bun run scan` scans the current repository and prints a markdown report.
+- `bun run src/cli/main.ts scan . --mode diff` scans only files changed vs local `HEAD` diff + untracked files.
+- `bun run src/cli/main.ts scan . --mode diff --base-ref origin/main --head-ref HEAD` scans only files changed between refs.
+- Every scan now loads or creates a versioned threat model snapshot and includes threat-model metadata in scan output.
+- Threat model cache is stored under `.hydra/threat-models/<repo-hash>/versions.json` (repo-state fingerprinted and versioned).
 - `bun run eval:d1` runs the seeded D1 benchmark and writes a report to `evaluation/reports/`.
 - `bun run eval:d2` runs the seeded D2 benchmark and writes a report to `evaluation/reports/`.
 - `bun run eval:d3` runs clean control benchmarks (false-positive focus).
@@ -51,6 +55,8 @@ bun run daemon
 - `bun run eval:all` aliases `eval:phase0` (full D1-D4 sweep).
 - `bun run eval:gates` checks current V1 gate status from the latest D1-D4 reports.
 - `bun run daemon` starts the trigger daemon on `127.0.0.1:8787`.
+- Scanner agents are now lifecycle-managed per scan (queued, running, completed/failed/timed_out) and returned in `scan` JSON output as `agent_runs`.
+- Tune lifecycle limits with `HYDRA_MAX_CONCURRENT_AGENTS` and `HYDRA_AGENT_TIMEOUT_MS`.
 
 Trigger API:
 
@@ -58,6 +64,14 @@ Trigger API:
 curl -sS -X POST http://127.0.0.1:8787/trigger \
   -H 'content-type: application/json' \
   -d '{"target_path":"./golden_repos/solana_seeded_v1/repo-template-a","mode":"full","trigger":"manual"}'
+```
+
+Diff trigger example (parse git diff range):
+
+```bash
+curl -sS -X POST http://127.0.0.1:8787/trigger \
+  -H 'content-type: application/json' \
+  -d '{"target_path":".","mode":"diff","base_ref":"origin/main","head_ref":"HEAD","trigger":"pr-check"}'
 ```
 
 ```bash

@@ -1,6 +1,6 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { runFullScan } from "../orchestrator/run-scan";
+import { runDiffScan, runFullScan } from "../orchestrator/run-scan";
 import { startOrchestratorDaemon } from "../orchestrator/daemon";
 import { toMarkdownReport } from "../output/report";
 import { toSarif } from "../output/sarif";
@@ -10,12 +10,14 @@ function usage(): string {
     "Hydra Security CLI",
     "",
     "Usage:",
-    "  bun run src/cli/main.ts scan [targetPath] [--json] [--sarif path]",
+    "  bun run src/cli/main.ts scan [targetPath] [--mode full|diff] [--base-ref main] [--head-ref HEAD] [--json] [--sarif path]",
     "  bun run src/cli/main.ts daemon [--host 127.0.0.1] [--port 8787]",
     "  bun run src/cli/main.ts help",
     "",
     "Examples:",
     "  bun run src/cli/main.ts scan .",
+    "  bun run src/cli/main.ts scan . --mode diff",
+    "  bun run src/cli/main.ts scan . --mode diff --base-ref origin/main --head-ref HEAD",
     "  bun run src/cli/main.ts scan ./golden_repos/solana_seeded_v1/repo-template-a --json",
     "  bun run src/cli/main.ts scan . --sarif out.sarif.json",
     "  bun run src/cli/main.ts daemon --port 8787"
@@ -29,11 +31,23 @@ function getOptionValue(args: string[], flag: string): string | undefined {
 
 async function handleScan(args: string[]): Promise<void> {
   const maybePath = args.find((arg) => !arg.startsWith("--")) ?? ".";
+  const mode = getOptionValue(args, "--mode") ?? "full";
+  if (mode !== "full" && mode !== "diff") {
+    throw new Error(`Invalid --mode value: ${mode}. Expected full or diff.`);
+  }
+  const baseRef = getOptionValue(args, "--base-ref");
+  const headRef = getOptionValue(args, "--head-ref");
+  if (headRef && !baseRef) {
+    throw new Error("--head-ref requires --base-ref.");
+  }
   const asJson = args.includes("--json");
   const sarifFlagIndex = args.findIndex((arg) => arg === "--sarif");
   const sarifPath = sarifFlagIndex >= 0 ? args[sarifFlagIndex + 1] : undefined;
 
-  const result = await runFullScan(maybePath);
+  const result =
+    mode === "diff"
+      ? await runDiffScan(maybePath, { baseRef, headRef })
+      : await runFullScan(maybePath);
 
   if (asJson) {
     console.log(JSON.stringify(result, null, 2));

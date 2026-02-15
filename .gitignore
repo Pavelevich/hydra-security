@@ -31,6 +31,9 @@ docker-compose.override.yml
 *.log
 logs/
 
+# Local Hydra cache
+.hydra/
+
 # Database
 *.db
 *.sqlite

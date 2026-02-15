@@ -1,7 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { runFullScan } from "./run-scan";
+import { runDiffScan, runFullScan } from "./run-scan";
 import type { ScanResult } from "../types";
 
 type RunStatus = "queued" | "running" | "completed" | "failed";
@@ -10,6 +10,9 @@ interface TriggerRequest {
   target_path: string;
   mode?: "full" | "diff";
   trigger?: string;
+  base_ref?: string;
+  head_ref?: string;
+  changed_files?: string[];
 }
 
 interface RunRecord {
@@ -17,6 +20,9 @@ interface RunRecord {
   target_path: string;
   mode: "full" | "diff";
   trigger: string;
+  base_ref?: string;
+  head_ref?: string;
+  changed_files?: string[];
   status: RunStatus;
   created_at: string;
   started_at?: string;
@@ -97,10 +103,14 @@ async function executeRun(runId: string): Promise<void> {
   record.started_at = new Date().toISOString();
 
   try {
-    if (record.mode !== "full") {
-      throw new Error(`Unsupported mode: ${record.mode}`);
-    }
-    const result = await runFullScan(record.target_path);
+    const result =
+      record.mode === "diff"
+        ? await runDiffScan(record.target_path, {
+            baseRef: record.base_ref,
+            headRef: record.head_ref,
+            changedFiles: record.changed_files
+          })
+        : await runFullScan(record.target_path);
     record.status = "completed";
     record.result = result;
     record.completed_at = new Date().toISOString();
@@ -135,6 +145,17 @@ async function handleTrigger(req: IncomingMessage, res: ServerResponse): Promise
     writeJson(res, { error: "invalid_mode", allowed: ["full", "diff"] }, 400);
     return;
   }
+  if (payload.head_ref && !payload.base_ref) {
+    writeJson(res, { error: "head_ref_requires_base_ref" }, 400);
+    return;
+  }
+  if (payload.changed_files && !Array.isArray(payload.changed_files)) {
+    writeJson(res, { error: "changed_files_must_be_array" }, 400);
+    return;
+  }
+  const changedFiles =
+    payload.changed_files?.filter((filePath): filePath is string => typeof filePath === "string") ??
+    undefined;
 
   let targetPath: string;
   try {
@@ -151,6 +172,9 @@ async function handleTrigger(req: IncomingMessage, res: ServerResponse): Promise
     target_path: targetPath,
     mode,
     trigger: payload.trigger ?? "manual",
+    base_ref: payload.base_ref?.trim() || undefined,
+    head_ref: payload.head_ref?.trim() || undefined,
+    changed_files: changedFiles,
     status: "queued",
     created_at: new Date().toISOString()
   };
@@ -168,7 +192,10 @@ async function handleTrigger(req: IncomingMessage, res: ServerResponse): Promise
       run_id: id,
       status: record.status,
       target_path: record.target_path,
-      mode: record.mode
+      mode: record.mode,
+      base_ref: record.base_ref,
+      head_ref: record.head_ref,
+      changed_files: record.changed_files
     },
     202
   );

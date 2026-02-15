@@ -27,12 +27,73 @@ export interface Finding {
 export interface ScanTarget {
   root_path: string;
   mode: "full" | "diff";
+  diff?: {
+    base_ref?: string;
+    head_ref?: string;
+    changed_files: string[];
+  };
+}
+
+export interface ThreatModelFingerprint {
+  scan_mode: "full" | "diff";
+  git_commit?: string;
+  git_tree?: string;
+  git_is_dirty: boolean;
+  base_ref?: string;
+  head_ref?: string;
+  changed_files_hash: string;
+}
+
+export interface ThreatModelSummary {
+  primary_language: string;
+  language_breakdown: Record<string, number>;
+  detected_frameworks: string[];
+  assets: string[];
+  trust_boundaries: string[];
+  entry_points: string[];
+  attack_surface: string[];
+  scan_scope_files: string[];
+}
+
+export interface ThreatModelVersion {
+  id: string;
+  repo_id: string;
+  repo_root: string;
+  revision: number;
+  schema_version: string;
+  created_at: string;
+  parent_version_id?: string;
+  fingerprint_hash: string;
+  fingerprint: ThreatModelFingerprint;
+  summary: ThreatModelSummary;
+  storage_path: string;
+}
+
+export interface ThreatModelInfo {
+  version: ThreatModelVersion;
+  loaded_from_cache: boolean;
+}
+
+export type AgentRunStatus = "queued" | "running" | "completed" | "failed" | "timed_out";
+
+export interface AgentRunRecord {
+  id: string;
+  agent_id: string;
+  status: AgentRunStatus;
+  queued_at: string;
+  started_at?: string;
+  completed_at?: string;
+  duration_ms?: number;
+  finding_count?: number;
+  error?: string;
 }
 
 export interface ScanResult {
   target: ScanTarget;
   started_at: string;
   completed_at: string;
+  threat_model?: ThreatModelInfo;
+  agent_runs?: AgentRunRecord[];
   findings: Finding[];
 }
 

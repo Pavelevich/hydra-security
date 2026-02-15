@@ -10,6 +10,20 @@ export function toMarkdownReport(result: ScanResult): string {
   lines.push(`- Started: ${result.started_at}`);
   lines.push(`- Completed: ${result.completed_at}`);
   lines.push(`- Findings: **${result.findings.length}**`);
+  if (result.agent_runs && result.agent_runs.length > 0) {
+    const completedAgents = result.agent_runs.filter((run) => run.status === "completed").length;
+    const failedAgents = result.agent_runs.filter((run) => run.status === "failed").length;
+    const timedOutAgents = result.agent_runs.filter((run) => run.status === "timed_out").length;
+    lines.push(
+      `- Agent Runs: ${result.agent_runs.length} total (${completedAgents} completed, ${failedAgents} failed, ${timedOutAgents} timed out)`
+    );
+  }
+  if (result.threat_model) {
+    const status = result.threat_model.loaded_from_cache ? "cache-hit" : "generated";
+    lines.push(
+      `- Threat Model: \`${result.threat_model.version.id}\` (rev ${result.threat_model.version.revision}, ${status})`
+    );
+  }
   lines.push("");
 
   if (result.findings.length === 0) {

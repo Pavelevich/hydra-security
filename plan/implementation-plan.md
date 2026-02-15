@@ -32,9 +32,9 @@
 
 ### 1.2 Core Orchestrator
 - [x] Build orchestrator daemon (receives triggers, spawns agents)
-- [ ] Git integration (parse commits, diffs, PR events)
-- [ ] Threat model storage and versioning
-- [ ] Agent lifecycle management (spawn, monitor, collect results)
+- [x] Git integration (parse commits, diffs, PR events)
+- [x] Threat model storage and versioning
+- [x] Agent lifecycle management (spawn, monitor, collect results)
 - [x] Result aggregation and deduplication
 
 ### 1.3 Hybrid Detection Layer
@@ -43,11 +43,11 @@
 - [x] Add normalization layer into candidate pool
 
 ### 1.4 LLM Integration Layer
-- [ ] Claude API client with retry/fallback
-- [ ] Prompt template system (per agent type)
-- [ ] Token budget management (allocate context per agent)
-- [ ] Response parsing and validation
-- [ ] Streaming support for long-running analysis
+- [x] Claude API client with retry/fallback
+- [x] Prompt template system (per agent type)
+- [x] Token budget management (allocate context per agent)
+- [x] Response parsing and validation
+- [x] Streaming support for long-running analysis
 
 ## Phase 2: Scanner Agents (Week 2-4)
 
