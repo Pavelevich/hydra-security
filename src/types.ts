@@ -135,6 +135,38 @@ export interface AdversarialResult {
   judge?: JudgeVerdict;
 }
 
+export interface PatchProposal {
+  finding_id: string;
+  file: string;
+  patch_diff: string;
+  explanation: string;
+  root_cause: string;
+  test_code: string;
+  breaking_changes: string[];
+}
+
+export interface ReviewIssue {
+  severity: "error" | "warning" | "info";
+  description: string;
+}
+
+export interface PatchReview {
+  finding_id: string;
+  patch_proposal: PatchProposal;
+  approved: boolean;
+  issues: ReviewIssue[];
+  suggestions: string[];
+  exploit_retest_passed?: boolean;
+  regression_check_passed?: boolean;
+}
+
+export interface PatchResult {
+  adversarial: AdversarialResult;
+  patch?: PatchProposal;
+  review?: PatchReview;
+  status: "patched_and_verified" | "patched_needs_review" | "patch_rejected" | "no_patch" | "skipped";
+}
+
 export interface ExpectedFinding {
   vuln_class: VulnClass;
   severity: Severity;
