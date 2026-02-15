@@ -52,8 +52,27 @@ async function resolveTarget(input: string): Promise<{ localPath: string; cleanu
   return { localPath: tmpDir, cleanup, source: input };
 }
 
-// --- Deep analysis: extract source context for each finding ---
+// --- Deep analysis helpers ---
 const CONTEXT_LINES = 40;
+const MAX_SOURCE_BYTES = 80_000; // Cap total source to avoid blowing context
+
+async function listRustFiles(dir: string): Promise<string[]> {
+  const results: string[] = [];
+  async function walk(d: string): Promise<void> {
+    let entries;
+    try { entries = await fs.readdir(d, { withFileTypes: true }); } catch { return; }
+    for (const entry of entries) {
+      const full = path.join(d, entry.name);
+      if (entry.isDirectory() && !entry.name.startsWith(".") && entry.name !== "node_modules" && entry.name !== "target") {
+        await walk(full);
+      } else if (entry.isFile() && entry.name.endsWith(".rs")) {
+        results.push(full);
+      }
+    }
+  }
+  await walk(dir);
+  return results.sort();
+}
 
 async function extractFindingContexts(findings: import("../types.js").Finding[]): Promise<string> {
   const seen = new Set<string>();
@@ -65,11 +84,7 @@ async function extractFindingContexts(findings: import("../types.js").Finding[])
     seen.add(key);
 
     let source: string;
-    try {
-      source = await fs.readFile(f.file, "utf8");
-    } catch {
-      continue;
-    }
+    try { source = await fs.readFile(f.file, "utf8"); } catch { continue; }
 
     const lines = source.split("\n");
     const start = Math.max(0, f.line - 1 - CONTEXT_LINES);
@@ -95,49 +110,121 @@ async function extractFindingContexts(findings: import("../types.js").Finding[])
   return blocks.join("\n\n---\n\n");
 }
 
-const DEEP_ANALYSIS_PROMPT = `
-## HYDRA DEEP ANALYSIS — Instructions for Claude
+async function extractAllSources(rootPath: string): Promise<string> {
+  const files = await listRustFiles(rootPath);
+  const blocks: string[] = [];
+  let totalBytes = 0;
 
-You are now performing adversarial security validation on the findings below.
-For EACH finding, you must act as three separate agents:
+  for (const filePath of files) {
+    if (totalBytes >= MAX_SOURCE_BYTES) {
+      blocks.push(`\n... (truncated — ${files.length - blocks.length} more files, ${MAX_SOURCE_BYTES} byte limit reached)`);
+      break;
+    }
 
-### 1. RED TEAM (Attacker)
-- Can this vulnerability be exploited in practice?
-- Write a concrete attack scenario with step-by-step instructions
-- Estimate economic impact (e.g., "drain all funds", "grief users", "negligible")
-- Confidence level (0-100) that this is exploitable
+    let source: string;
+    try { source = await fs.readFile(filePath, "utf8"); } catch { continue; }
+    totalBytes += source.length;
 
-### 2. BLUE TEAM (Defender)
-- What existing mitigations exist in the code? (Anchor constraints, runtime checks, etc.)
-- Is the vulnerable code path actually reachable from an external transaction?
-- Are there environmental protections? (e.g., Solana runtime account locking prevents reentrancy)
+    const relFile = filePath.replace(rootPath + "/", "");
+    const numbered = source.split("\n").map((l, i) => `${String(i + 1).padStart(4)} | ${l}`).join("\n");
+    blocks.push(`### \`${relFile}\` (${source.split("\n").length} lines)\n\n\`\`\`rust\n${numbered}\n\`\`\``);
+  }
+
+  return blocks.join("\n\n---\n\n");
+}
+
+const DEEP_ANALYSIS_FINDINGS_PROMPT = `
+## HYDRA DEEP ANALYSIS — Adversarial Validation
+
+Pattern scanners detected the findings below. You must now validate each one.
+For EACH finding, act as three agents:
+
+### RED TEAM (Attacker)
+- Can this be exploited? Write a concrete attack scenario.
+- Estimate economic impact. Confidence (0-100).
+
+### BLUE TEAM (Defender)
+- What mitigations exist? Is the code path reachable?
+- Environmental protections (Solana runtime, Anchor constraints)?
 - Recommendation: CONFIRMED / MITIGATED / INFEASIBLE
 
-### 3. JUDGE (Final Verdict)
-- Weigh Red Team vs Blue Team arguments
+### JUDGE (Verdict)
 - Verdict: CONFIRMED / LIKELY / DISPUTED / FALSE_POSITIVE
-- Final severity: CRITICAL / HIGH / MEDIUM / LOW
-- Final confidence: 0-100%
-- One-paragraph reasoning
+- Final severity + confidence. One-paragraph reasoning.
 
-### Output Format
-For each finding, produce a table:
-
+### Output: for each finding produce:
 | Role | Assessment |
 |------|-----------|
-| Red Team | [exploitability + attack scenario] |
-| Blue Team | [mitigations + reachability analysis] |
-| Judge | **VERDICT** — [reasoning] |
+| Red Team | ... |
+| Blue Team | ... |
+| Judge | **VERDICT** — ... |
 
-Then at the end, produce a summary table:
-
-| # | Finding | Verdict | Final Severity | Confidence |
-|---|---------|---------|---------------|------------|
-| 1 | ... | CONFIRMED/LIKELY/DISPUTED/FALSE_POSITIVE | ... | ...% |
+Final summary table at the end.
 
 ---
 
-## Findings with Source Code Context
+`;
+
+const DEEP_ANALYSIS_FULL_REVIEW_PROMPT = `
+## HYDRA DEEP ANALYSIS — Full Security Review
+
+Pattern scanners found 0 automated findings. This does NOT mean the code is safe.
+You must now perform a comprehensive manual security audit of the source code below.
+
+### Analyze for these vulnerability classes:
+
+**Account Validation**
+- Missing signer checks on privileged operations
+- Missing owner/authority validation (has_one, constraint)
+- Account type confusion (wrong account types)
+- Missing account initialization checks
+
+**Cross-Program Invocation (CPI)**
+- Arbitrary CPI targets (invoke with user-supplied program ID)
+- CPI reentrancy (state mutation before invoke)
+- Signer seed bypass in invoke_signed
+
+**PDA Security**
+- Non-canonical bump usage
+- Seed collision / missing domain separation
+- Attacker-controlled seed components
+
+**Business Logic**
+- Incorrect math (overflow, rounding, precision loss)
+- Missing access controls on claim/withdraw/transfer
+- Timestamp manipulation vulnerabilities
+- Token amount validation (can user drain more than entitled?)
+- Vesting schedule bypass possibilities
+- Missing checks on account closure / rent reclaim
+
+**Token Security**
+- Missing token program ownership checks
+- Mint authority validation
+- Decimal handling errors
+
+### Output Format
+
+For each vulnerability found, produce:
+
+| Field | Value |
+|-------|-------|
+| Vulnerability | [class] |
+| Severity | CRITICAL / HIGH / MEDIUM / LOW |
+| Location | file:line |
+| Description | ... |
+| Attack Scenario | Step-by-step exploit |
+| Confidence | 0-100% |
+
+Then a final summary:
+| # | Vulnerability | Severity | Location | Confidence |
+|---|--------------|----------|----------|:----------:|
+
+If the code is genuinely secure, explain WHY for each category above.
+
+---
+
+## Source Code
+
 `;
 
 function buildScanSummary(result: ScanResult): string {
@@ -254,10 +341,17 @@ server.registerTool(
       content.push({ type: "text" as const, text: summary });
       content.push({ type: "text" as const, text: report });
 
-      // Deep mode: include source context + analysis instructions
-      if (deep && result.findings.length > 0) {
-        const contexts = await extractFindingContexts(result.findings);
-        content.push({ type: "text" as const, text: DEEP_ANALYSIS_PROMPT + "\n" + contexts });
+      // Deep mode: always provide source context for agent-side analysis
+      if (deep) {
+        if (result.findings.length > 0) {
+          // Findings exist — validate them with Red/Blue/Judge
+          const contexts = await extractFindingContexts(result.findings);
+          content.push({ type: "text" as const, text: DEEP_ANALYSIS_FINDINGS_PROMPT + contexts });
+        } else {
+          // No findings — full manual security review of all source files
+          const allSources = await extractAllSources(target.localPath);
+          content.push({ type: "text" as const, text: DEEP_ANALYSIS_FULL_REVIEW_PROMPT + allSources });
+        }
       }
 
       return { content };
