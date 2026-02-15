@@ -116,21 +116,21 @@
 ## Phase 5: Integration & Pilot (Week 8-12)
 
 ### 5.1 GitHub Integration
-- [ ] GitHub App for webhook reception
-- [ ] PR comment bot (inline vulnerability annotations)
-- [ ] GitHub Check integration (pass/fail on security)
-- [ ] SARIF upload to GitHub Security tab
+- [x] GitHub App for webhook reception
+- [x] PR comment bot (inline vulnerability annotations)
+- [x] GitHub Check integration (pass/fail on security)
+- [x] SARIF upload to GitHub Security tab
 
 ### 5.2 CLI Tool
-- [ ] `hydra-audit scan <repo>` - Full scan
-- [ ] `hydra-audit diff <commit>` - Diff-based scan
-- [ ] `hydra-audit report` - Generate report
-- [ ] `hydra-audit config` - Configure scanners/thresholds
+- [x] `hydra-audit scan <repo>` - Full scan
+- [x] `hydra-audit diff <commit>` - Diff-based scan
+- [x] `hydra-audit report` - Generate report
+- [x] `hydra-audit config` - Configure scanners/thresholds
 
 ### 5.3 Pilot
-- [ ] Pilot on 5-10 real Solana/Anchor repos
-- [ ] Run full evaluation protocol weekly
-- [ ] Publish benchmark report with raw evidence
+- [x] Pilot on 5-10 real Solana/Anchor repos
+- [x] Run full evaluation protocol weekly
+- [x] Publish benchmark report with raw evidence
 - [ ] Decide go/no-go for expanding scanner coverage
 
 ### 5.4 Dashboard (Optional)

@@ -4,12 +4,19 @@
   "private": true,
   "type": "module",
   "description": "Hydra Security - multi-agent security swarm scaffold",
+  "bin": {
+    "hydra-audit": "./src/cli/main.ts"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "ci": "bun run typecheck && bun run scan && bun run eval:core",
     "daemon": "bun run src/cli/main.ts daemon --host 127.0.0.1 --port 8787",
     "scan": "bun run src/cli/main.ts scan .",
+    "diff": "bun run src/cli/main.ts diff .",
+    "report": "bun run src/cli/main.ts report",
+    "config": "bun run src/cli/main.ts config",
+    "github-app": "bun run src/cli/main.ts github-app",
     "eval": "bun run evaluation/scripts/run-eval.ts --manifest evaluation/datasets/manifests/d1-solana-seeded-v1.json",
     "eval:d1": "bun run evaluation/scripts/run-eval.ts --manifest evaluation/datasets/manifests/d1-solana-seeded-v1.json",
     "eval:d2": "bun run evaluation/scripts/run-eval.ts --manifest evaluation/datasets/manifests/d2-solana-seeded-v2.json",
@@ -21,7 +28,8 @@
     "eval:gates": "bun run evaluation/scripts/check-v1-gates.ts",
     "tune": "bun run evaluation/scripts/tune-prompts.ts",
     "tune:d1": "bun run evaluation/scripts/tune-prompts.ts --manifest evaluation/datasets/manifests/d1-solana-seeded-v1.json",
-    "tune:d2": "bun run evaluation/scripts/tune-prompts.ts --manifest evaluation/datasets/manifests/d2-solana-seeded-v2.json"
+    "tune:d2": "bun run evaluation/scripts/tune-prompts.ts --manifest evaluation/datasets/manifests/d2-solana-seeded-v2.json",
+    "pilot": "bun run evaluation/scripts/pilot-runner.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
