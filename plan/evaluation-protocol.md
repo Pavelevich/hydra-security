@@ -2,10 +2,10 @@
 
 ## Objective
 
-Define a reproducible way to measure whether AgenC is actually better on its target domain.
+Define a reproducible way to measure whether Hydra is actually better on its target domain.
 
 Primary question:
-- Does AgenC improve vulnerability detection quality and patch reliability for Solana/Anchor repositories while maintaining acceptable runtime and cost?
+- Does Hydra improve vulnerability detection quality and patch reliability for Solana/Anchor repositories while maintaining acceptable runtime and cost?
 
 ## Claim Policy
 
@@ -107,7 +107,7 @@ Calibration metrics:
 Each evaluation report must include:
 - Dataset snapshot ID
 - Baseline versions and configurations
-- AgenC version and prompt set version
+- Hydra version and prompt set version
 - Metric table with confidence intervals
 - Error analysis (top false positives and false negatives)
 - Cost and runtime summary

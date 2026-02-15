@@ -1,13 +1,13 @@
 # Competitive Comparison Matrix
 
-## AgenC Security Swarm vs Existing Solutions
+## Hydra Security vs Existing Solutions
 
 Note: This matrix mixes current-state facts and target-state hypotheses.
 Items marked as "Target" are goals pending benchmark validation.
 
 ### vs OpenAI Aardvark
 
-| Feature | Aardvark | AgenC Swarm | Status |
+| Feature | Aardvark | Hydra | Status |
 |---------|----------|-------------|--------|
 | Architecture | Publicly described as staged pipeline | Multi-agent swarm | Different design choices |
 | Validation | Sandbox exploit confirmation | Adversarial Red/Blue + sandbox | Target advantage |
@@ -24,7 +24,7 @@ Items marked as "Target" are goals pending benchmark validation.
 
 ### vs Traditional SAST Tools (Semgrep, CodeQL, SonarQube)
 
-| Feature | Traditional SAST | AgenC Swarm |
+| Feature | Traditional SAST | Hydra |
 |---------|-----------------|-------------|
 | Method | Pattern/rule matching | LLM reasoning |
 | False positives | High (30-70%) | Low (<5% target) |
@@ -36,7 +36,7 @@ Items marked as "Target" are goals pending benchmark validation.
 
 ### vs Solana-Specific Auditors (Sec3, OtterSec, Neodyme)
 
-| Feature | Human Auditors | AgenC Swarm |
+| Feature | Human Auditors | Hydra |
 |---------|---------------|-------------|
 | Cost | $50k-200k per audit | ~$3.41 per scan |
 | Speed | 2-6 weeks | Minutes |
@@ -49,7 +49,7 @@ Items marked as "Target" are goals pending benchmark validation.
 
 ### vs GitHub Copilot Security / Amazon CodeGuru
 
-| Feature | Copilot/CodeGuru | AgenC Swarm |
+| Feature | Copilot/CodeGuru | Hydra |
 |---------|-----------------|-------------|
 | Detection | Pattern-based + light ML | Deep LLM reasoning |
 | Validation | None (just flags) | Sandbox exploit confirmation |
@@ -73,7 +73,7 @@ Items marked as "Target" are goals pending benchmark validation.
                     HIGH DEPTH
                         |
                         |
-   Human Auditors  ●    |    ● AgenC Swarm
+   Human Auditors  ●    |    ● Hydra
                         |
                         |
                         |    ● Aardvark

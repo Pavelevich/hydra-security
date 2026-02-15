@@ -82,7 +82,7 @@ From OpenAI's published announcement:
 
 ## Competitive Opportunities (Hypotheses to Validate)
 
-These are design hypotheses for AgenC, not proven weaknesses of Aardvark:
+These are design hypotheses for Hydra, not proven weaknesses of Aardvark:
 1. **Adversarial validation may lower false positives further** than single-loop validation.
 2. **Domain-specialized Solana/Anchor agents may outperform generic scanners** on Solana-specific bug classes.
 3. **Parallel specialist scanners may improve wall-clock latency** on larger repositories.
@@ -92,8 +92,8 @@ These are design hypotheses for AgenC, not proven weaknesses of Aardvark:
 ## What We Should Not Claim Without Evidence
 
 - "Aardvark is single-agent internally."
-- "AgenC is better than Aardvark overall."
-- "AgenC has lower false positive rate than Aardvark."
+- "Hydra is better than Aardvark overall."
+- "Hydra has lower false positive rate than Aardvark."
 
 These statements require direct benchmark evidence under a defined protocol.
 

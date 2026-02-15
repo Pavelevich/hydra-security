@@ -177,11 +177,11 @@ The Blue Team Agent for Solana would check:
 4. **Transaction simulation**: Would Solana runtime reject the transaction anyway?
 5. **Economic feasibility**: Is the attack profitable after transaction fees?
 
-## Integration with AgenC Protocol
+## Integration with Solana Projects
 
-Since AgenC is building on Solana with Anchor, this swarm would be specifically tuned for:
+The swarm is specifically tuned for Solana/Anchor programs including:
 
-- AgenC program instructions (task creation, claiming, completion, disputes)
+- Program instructions (task creation, claiming, completion, disputes)
 - Escrow account security
 - Agent registration/deregistration flows
 - Speculative execution system (bonds, commitments, locks)

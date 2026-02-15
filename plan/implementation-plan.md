@@ -122,10 +122,10 @@
 - [ ] SARIF upload to GitHub Security tab
 
 ### 5.2 CLI Tool
-- [ ] `agenc-audit scan <repo>` - Full scan
-- [ ] `agenc-audit diff <commit>` - Diff-based scan
-- [ ] `agenc-audit report` - Generate report
-- [ ] `agenc-audit config` - Configure scanners/thresholds
+- [ ] `hydra-audit scan <repo>` - Full scan
+- [ ] `hydra-audit diff <commit>` - Diff-based scan
+- [ ] `hydra-audit report` - Generate report
+- [ ] `hydra-audit config` - Configure scanners/thresholds
 
 ### 5.3 Pilot
 - [ ] Pilot on 5-10 real Solana/Anchor repos

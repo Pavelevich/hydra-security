@@ -1,7 +1,7 @@
-AgenC SOURCE-AVAILABLE LICENSE
+HYDRA SECURITY SOURCE-AVAILABLE LICENSE
 Version 1.0, February 2026
 
-Copyright (c) 2026 AgenC All rights reserved.
+Copyright (c) 2026 Hydra Security All rights reserved.
 
 TERMS AND CONDITIONS
 
@@ -24,7 +24,7 @@ or adapted.
 
 2. GRANT OF LICENSE
 
-Subject to the terms of this License, AgenC grants you a
+Subject to the terms of this License, Hydra Security grants you a
 limited, non-exclusive, non-transferable, revocable license to:
 
   a) View and study the source code for personal educational purposes.
@@ -35,7 +35,7 @@ limited, non-exclusive, non-transferable, revocable license to:
 
 3. RESTRICTIONS
 
-You MAY NOT, without prior written authorization from AgenC:
+You MAY NOT, without prior written authorization from Hydra Security:
 
   a) Use the Software or any Derivative Work for Commercial Use.
   b) Sell, sublicense, rent, lease, or lend the Software.
@@ -45,42 +45,42 @@ You MAY NOT, without prior written authorization from AgenC:
   e) Remove or alter any copyright notices, license headers, or
      attribution notices in the Software.
   f) Use the Software to compete with products or services offered
-     by AgenC
+     by Hydra Security
   g) Claim ownership of the Software or any Derivative Work.
-  h) Use the name "AgenC", "AgenC Security Swarm", or associated
+  h) Use the name "Hydra Security", "Hydra Security Security Swarm", or associated
      trademarks without written permission.
 
 4. INTELLECTUAL PROPERTY
 
 All intellectual property rights in the Software, including but not
 limited to copyrights, patents, trade secrets, and trademarks, are
-and shall remain the exclusive property of AgenC
+and shall remain the exclusive property of Hydra Security
 
 No rights are granted under any patents owned or controlled by
-AgenC This License does not grant permission to use the
+Hydra Security This License does not grant permission to use the
 trade names, trademarks, service marks, or product names of
-AgenC
+Hydra Security
 
 5. CONTRIBUTIONS
 
 Any contributions submitted to this repository shall be subject to
 the terms of this License. By submitting a contribution, you agree
 to assign all intellectual property rights in the contribution to
-AgenC and represent that you have the right to do so.
+Hydra Security and represent that you have the right to do so.
 
 6. NO WARRANTY
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL AgenC BE LIABLE FOR ANY
+NONINFRINGEMENT. IN NO EVENT SHALL Hydra Security BE LIABLE FOR ANY
 CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 7. TERMINATION
 
-This License is effective until terminated. AgenC may
+This License is effective until terminated. Hydra Security may
 terminate this License at any time without notice. Upon termination,
 you must destroy all copies of the Software in your possession.
 
@@ -92,7 +92,7 @@ fail to comply with any of its terms.
 This License shall be governed by and construed in accordance with
 applicable intellectual property laws. Any disputes arising under
 this License shall be resolved in the courts of competent
-jurisdiction as determined by AgenC
+jurisdiction as determined by Hydra Security
 
 9. COMMERCIAL LICENSING
 
@@ -100,4 +100,4 @@ For commercial licensing inquiries, contact the repository owner.
 
 ---
 
-AgenC 2026 - All Rights Reserved
+Hydra Security 2026 - All Rights Reserved

@@ -81,7 +81,7 @@ Reference: `architecture/sandbox-security-spec.md`
 
 | Component | Technology | Rationale |
 |-----------|-----------|-----------|
-| Threat Models | **JSON files in repo** (.agenc-security/) | Versioned with code |
+| Threat Models | **JSON files in repo** (.hydra-security/) | Versioned with code |
 | Scan Results | **SQLite** | Simple, portable, no external deps |
 | Agent Logs | **File-based** (structured JSON) | Debug + audit trail |
 | Cache | **Redis** or **File-based** | Threat model cache, scan result cache |
@@ -128,7 +128,7 @@ Use `plan/evaluation-protocol.md` to track real cost/quality tradeoffs.
 ## Directory Structure
 
 ```
-agenc-security-swarm/
+hydra-security/
 ├── Cargo.toml              # Rust workspace (if Rust)
 ├── package.json            # Node/Bun workspace (if TS)
 ├── docker/

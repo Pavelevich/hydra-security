@@ -1,4 +1,4 @@
-# AgenC Security Swarm
+# Hydra Security
 
 A research and implementation project for a multi-agent security auditing system with adversarial validation and Solana/Anchor specialization.
 
@@ -41,4 +41,4 @@ To claim "better," results must meet gates defined in `plan/evaluation-protocol.
 
 ---
 
-AgenC 2026
+Hydra Security 2026
