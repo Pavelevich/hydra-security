@@ -2,13 +2,55 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod/v4";
 import path from "node:path";
-import { spawn } from "node:child_process";
+import { spawn, execSync } from "node:child_process";
+import { promises as fs } from "node:fs";
+import os from "node:os";
 import { runFullScan, runDiffScan } from "../orchestrator/run-scan.js";
 import { toMarkdownReport } from "../output/report.js";
 import { toSarif } from "../output/sarif.js";
 import type { ScanResult } from "../types.js";
 
 const PROJECT_ROOT = path.resolve(import.meta.dirname, "../..");
+
+// --- GitHub URL resolution ---
+const GITHUB_URL_RE = /^https?:\/\/github\.com\/([^/]+\/[^/]+?)(?:\.git)?\/?$/;
+
+function isGitHubUrl(input: string): boolean {
+  return GITHUB_URL_RE.test(input);
+}
+
+function repoSlugFromUrl(url: string): string {
+  const match = url.match(GITHUB_URL_RE);
+  if (!match) throw new Error(`Invalid GitHub URL: ${url}`);
+  return match[1].replace("/", "-");
+}
+
+async function resolveTarget(input: string): Promise<{ localPath: string; cleanup: (() => Promise<void>) | null; source: string }> {
+  if (!isGitHubUrl(input)) {
+    const resolved = path.isAbsolute(input) ? input : path.resolve(PROJECT_ROOT, input);
+    return { localPath: resolved, cleanup: null, source: resolved };
+  }
+
+  const slug = repoSlugFromUrl(input);
+  const tmpDir = path.join(os.tmpdir(), `hydra-scan-${slug}-${Date.now()}`);
+  await fs.mkdir(tmpDir, { recursive: true });
+
+  try {
+    execSync(`git clone --depth 1 ${input} ${tmpDir}`, {
+      stdio: ["ignore", "pipe", "pipe"],
+      timeout: 120_000,
+    });
+  } catch (err) {
+    await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+    throw new Error(`Failed to clone ${input}: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  const cleanup = async () => {
+    await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+  };
+
+  return { localPath: tmpDir, cleanup, source: input };
+}
 
 function buildScanSummary(result: ScanResult): string {
   const parts: string[] = [];
@@ -68,12 +110,13 @@ server.registerTool(
   {
     description:
       "Run a full Hydra security scan on a Solana/Anchor repository. " +
+      "Accepts a local path OR a GitHub URL (e.g. https://github.com/org/repo). " +
       "Set adversarial=true to activate the Red Team / Blue Team / Judge validation swarm (requires ANTHROPIC_API_KEY). " +
       "Set patch=true to also generate and verify patches for confirmed findings.",
     inputSchema: {
       target_path: z
         .string()
-        .describe("Absolute or relative path to the repository to scan"),
+        .describe("Local path or GitHub URL (https://github.com/org/repo) of the repository to scan"),
       adversarial: z
         .boolean()
         .optional()
@@ -85,21 +128,32 @@ server.registerTool(
     },
   },
   async ({ target_path, adversarial, patch }) => {
-    const resolved = path.isAbsolute(target_path)
-      ? target_path
-      : path.resolve(PROJECT_ROOT, target_path);
+    let target;
+    try {
+      target = await resolveTarget(target_path);
+    } catch (err) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `Target resolution failed: ${err instanceof Error ? err.message : String(err)}`,
+          },
+        ],
+        isError: true,
+      };
+    }
 
     try {
-      const result = await runFullScan(resolved, {
+      const result = await runFullScan(target.localPath, {
         adversarial: adversarial ?? false,
         patch: patch ?? false,
       });
       const report = toMarkdownReport(result);
-
       const summary = buildScanSummary(result);
 
       return {
         content: [
+          ...(target.cleanup ? [{ type: "text" as const, text: `Cloned ${target.source} for scanning.` }] : []),
           { type: "text" as const, text: summary },
           { type: "text" as const, text: report },
         ],
@@ -114,6 +168,8 @@ server.registerTool(
         ],
         isError: true,
       };
+    } finally {
+      if (target.cleanup) await target.cleanup();
     }
   }
 );
@@ -124,11 +180,12 @@ server.registerTool(
   {
     description:
       "Run a differential Hydra security scan on only the files changed since a git reference. " +
+      "Accepts a local path OR a GitHub URL. " +
       "Set adversarial=true to validate findings with the Red/Blue/Judge swarm.",
     inputSchema: {
       target_path: z
         .string()
-        .describe("Absolute or relative path to the repository"),
+        .describe("Local path or GitHub URL (https://github.com/org/repo) of the repository"),
       base_ref: z
         .string()
         .optional()
@@ -148,24 +205,34 @@ server.registerTool(
     },
   },
   async ({ target_path, base_ref, head_ref, adversarial, patch }) => {
-    const resolved = path.isAbsolute(target_path)
-      ? target_path
-      : path.resolve(PROJECT_ROOT, target_path);
+    let target;
+    try {
+      target = await resolveTarget(target_path);
+    } catch (err) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `Target resolution failed: ${err instanceof Error ? err.message : String(err)}`,
+          },
+        ],
+        isError: true,
+      };
+    }
 
     try {
-      const result = await runDiffScan(resolved, {
+      const result = await runDiffScan(target.localPath, {
         baseRef: base_ref,
         headRef: head_ref,
         adversarial: adversarial ?? false,
         patch: patch ?? false,
       });
       const report = toMarkdownReport(result);
-      const changedCount = result.target.diff?.changed_files?.length ?? 0;
-
       const summary = buildScanSummary(result);
 
       return {
         content: [
+          ...(target.cleanup ? [{ type: "text" as const, text: `Cloned ${target.source} for scanning.` }] : []),
           { type: "text" as const, text: summary },
           { type: "text" as const, text: report },
         ],
@@ -180,6 +247,8 @@ server.registerTool(
         ],
         isError: true,
       };
+    } finally {
+      if (target.cleanup) await target.cleanup();
     }
   }
 );
