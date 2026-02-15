@@ -10,6 +10,53 @@ import type { ScanResult } from "../types.js";
 
 const PROJECT_ROOT = path.resolve(import.meta.dirname, "../..");
 
+function buildScanSummary(result: ScanResult): string {
+  const parts: string[] = [];
+  const agentRuns = result.agent_runs ?? [];
+  const hasLlm = agentRuns.some((r) => r.agent_id.startsWith("llm.scanner"));
+  const duration = new Date(result.completed_at).getTime() - new Date(result.started_at).getTime();
+
+  // Findings count
+  parts.push(`Found ${result.findings.length} finding(s) across ${agentRuns.length} scanner(s) in ${duration}ms.`);
+
+  // Pipeline stages that ran
+  const stages: string[] = [];
+  stages.push("pattern-scanners");
+  stages.push("deterministic-signals");
+  if (hasLlm) stages.push("llm-scanners");
+  if (result.adversarial_results?.length) stages.push("adversarial-validation");
+  if (result.patch_results?.length) stages.push("patch-generation");
+  parts.push(`Pipeline: [${stages.join(" -> ")}]`);
+
+  // Stages that were skipped and why
+  const skipped: string[] = [];
+  if (!hasLlm) skipped.push("LLM scanners (no ANTHROPIC_API_KEY)");
+  if (!result.adversarial_results?.length && result.findings.length > 0) {
+    skipped.push("Adversarial validation (set adversarial=true + ANTHROPIC_API_KEY)");
+  }
+  if (!result.patch_results?.length) {
+    skipped.push("Patch generation (set patch=true + adversarial=true)");
+  }
+  if (skipped.length > 0) {
+    parts.push(`Skipped: ${skipped.join("; ")}`);
+  }
+
+  // Adversarial results
+  if (result.adversarial_results?.length) {
+    const confirmed = result.adversarial_results.filter((r) => r.judge?.verdict === "confirmed").length;
+    const likely = result.adversarial_results.filter((r) => r.judge?.verdict === "likely").length;
+    parts.push(`Adversarial: ${confirmed} confirmed, ${likely} likely out of ${result.adversarial_results.length} validated.`);
+  }
+
+  // Patch results
+  if (result.patch_results?.length) {
+    const approved = result.patch_results.filter((r) => r.status === "patched_and_verified").length;
+    parts.push(`Patches: ${approved}/${result.patch_results.length} approved.`);
+  }
+
+  return parts.join("\n");
+}
+
 const server = new McpServer({
   name: "hydra-security",
   version: "0.1.0",
@@ -49,20 +96,11 @@ server.registerTool(
       });
       const report = toMarkdownReport(result);
 
-      const parts: string[] = [];
-      parts.push(`Found ${result.findings.length} finding(s) across ${result.agent_runs?.length ?? 0} agent runs.`);
-      if (result.adversarial_results?.length) {
-        const confirmed = result.adversarial_results.filter((r) => r.judge?.verdict === "confirmed").length;
-        parts.push(`Adversarial validation: ${confirmed}/${result.adversarial_results.length} confirmed.`);
-      }
-      if (result.patch_results?.length) {
-        const approved = result.patch_results.filter((r) => r.status === "patched_and_verified").length;
-        parts.push(`Patches: ${approved}/${result.patch_results.length} approved.`);
-      }
+      const summary = buildScanSummary(result);
 
       return {
         content: [
-          { type: "text" as const, text: parts.join(" ") },
+          { type: "text" as const, text: summary },
           { type: "text" as const, text: report },
         ],
       };
@@ -124,20 +162,11 @@ server.registerTool(
       const report = toMarkdownReport(result);
       const changedCount = result.target.diff?.changed_files?.length ?? 0;
 
-      const parts: string[] = [];
-      parts.push(`Diff scan: ${changedCount} changed file(s), ${result.findings.length} finding(s).`);
-      if (result.adversarial_results?.length) {
-        const confirmed = result.adversarial_results.filter((r) => r.judge?.verdict === "confirmed").length;
-        parts.push(`Adversarial: ${confirmed}/${result.adversarial_results.length} confirmed.`);
-      }
-      if (result.patch_results?.length) {
-        const approved = result.patch_results.filter((r) => r.status === "patched_and_verified").length;
-        parts.push(`Patches: ${approved}/${result.patch_results.length} approved.`);
-      }
+      const summary = buildScanSummary(result);
 
       return {
         content: [
-          { type: "text" as const, text: parts.join(" ") },
+          { type: "text" as const, text: summary },
           { type: "text" as const, text: report },
         ],
       };
