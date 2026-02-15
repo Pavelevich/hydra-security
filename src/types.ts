@@ -95,6 +95,44 @@ export interface ScanResult {
   threat_model?: ThreatModelInfo;
   agent_runs?: AgentRunRecord[];
   findings: Finding[];
+  adversarial_results?: AdversarialResult[];
+}
+
+export interface RedTeamAssessment {
+  exploitable: boolean;
+  exploit_code?: string;
+  attack_steps: string[];
+  economic_impact?: string;
+  confidence: number;
+  reason?: string;
+  sandbox_executed: boolean;
+  sandbox_exit_code?: number;
+  sandbox_stdout?: string;
+}
+
+export interface BlueTeamAssessment {
+  existing_mitigations: string[];
+  reachable: boolean;
+  reachability_reasoning: string;
+  env_protections: string[];
+  economically_feasible: boolean;
+  overall_risk_reduction: number;
+  recommendation: "confirmed" | "mitigated" | "infeasible";
+}
+
+export interface JudgeVerdict {
+  verdict: "confirmed" | "likely" | "disputed" | "false_positive";
+  final_severity: Severity;
+  final_confidence: number;
+  reasoning: string;
+  evidence_summary: string;
+}
+
+export interface AdversarialResult {
+  finding: Finding;
+  red_team?: RedTeamAssessment;
+  blue_team?: BlueTeamAssessment;
+  judge?: JudgeVerdict;
 }
 
 export interface ExpectedFinding {

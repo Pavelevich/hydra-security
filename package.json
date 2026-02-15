@@ -18,7 +18,10 @@
     "eval:core": "bun run eval:d1 && bun run eval:d2",
     "eval:phase0": "bun run eval:d1 && bun run eval:d2 && bun run eval:d3 && bun run eval:d4",
     "eval:all": "bun run eval:phase0",
-    "eval:gates": "bun run evaluation/scripts/check-v1-gates.ts"
+    "eval:gates": "bun run evaluation/scripts/check-v1-gates.ts",
+    "tune": "bun run evaluation/scripts/tune-prompts.ts",
+    "tune:d1": "bun run evaluation/scripts/tune-prompts.ts --manifest evaluation/datasets/manifests/d1-solana-seeded-v1.json",
+    "tune:d2": "bun run evaluation/scripts/tune-prompts.ts --manifest evaluation/datasets/manifests/d2-solana-seeded-v2.json"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

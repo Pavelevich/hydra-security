@@ -60,38 +60,38 @@
 - [x] Create "golden" repos with known vulnerabilities
 - [x] Benchmark each scanner independently
 - [x] Measure recall and precision per vulnerability class
-- [ ] Tune prompts based on results
+- [x] Tune prompts based on results
 
 ## Phase 3: Adversarial Validation (Week 4-6)
 
 ### 3.1 Sandbox Infrastructure
-- [ ] Docker-based sandbox environment
-- [ ] Solana test validator sandbox (for on-chain exploits)
-- [ ] Network isolation (no outbound connections)
-- [ ] Ephemeral containers (destroy after each validation)
-- [ ] Resource limits (CPU, memory, time)
-- [ ] Implement all hardening controls in `architecture/sandbox-security-spec.md`
+- [x] Docker-based sandbox environment
+- [x] Solana test validator sandbox (for on-chain exploits)
+- [x] Network isolation (no outbound connections)
+- [x] Ephemeral containers (destroy after each validation)
+- [x] Resource limits (CPU, memory, time)
+- [x] Implement all hardening controls in `architecture/sandbox-security-spec.md`
 
 ### 3.2 Red Team Agent
-- [ ] Exploit generation from vulnerability description
-- [ ] PoC script writing (Python, Rust, JS depending on target)
-- [ ] Sandbox execution and result capture
-- [ ] Attack chain documentation
-- [ ] Solana-specific: transaction construction + local validator execution
+- [x] Exploit generation from vulnerability description
+- [x] PoC script writing (Python, Rust, JS depending on target)
+- [x] Sandbox execution and result capture
+- [x] Attack chain documentation
+- [x] Solana-specific: transaction construction + local validator execution
 
 ### 3.3 Blue Team Agent
-- [ ] Mitigation discovery (find existing defenses in codebase)
-- [ ] Reachability analysis (is the vulnerable path actually reachable?)
-- [ ] Environment check (do runtime protections block the attack?)
-- [ ] Economic feasibility analysis (is it profitable to exploit?)
-- [ ] Argument construction with evidence
+- [x] Mitigation discovery (find existing defenses in codebase)
+- [x] Reachability analysis (is the vulnerable path actually reachable?)
+- [x] Environment check (do runtime protections block the attack?)
+- [x] Economic feasibility analysis (is it profitable to exploit?)
+- [x] Argument construction with evidence
 
 ### 3.4 Judge Agent
-- [ ] Evidence weighing system (sandbox result > theoretical analysis)
-- [ ] CVSS-like severity scoring
-- [ ] Confidence scoring (0-100)
-- [ ] Threshold-based filtering (configurable)
-- [ ] Reasoning trace output
+- [x] Evidence weighing system (sandbox result > theoretical analysis)
+- [x] CVSS-like severity scoring
+- [x] Confidence scoring (0-100)
+- [x] Threshold-based filtering (configurable)
+- [x] Reasoning trace output
 
 ## Phase 4: Patching & Review (Week 6-8)
 
