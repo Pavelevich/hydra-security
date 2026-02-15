@@ -79,10 +79,13 @@ async function handleScan(args: string[]): Promise<void> {
   const sarifFlagIndex = args.findIndex((arg) => arg === "--sarif");
   const sarifPath = sarifFlagIndex >= 0 ? args[sarifFlagIndex + 1] : undefined;
 
+  const adversarial = args.includes("--adversarial");
+  const patch = args.includes("--patch");
+
   const result =
     mode === "diff"
-      ? await runDiffScan(maybePath, { baseRef, headRef })
-      : await runFullScan(maybePath);
+      ? await runDiffScan(maybePath, { baseRef, headRef, adversarial, patch })
+      : await runFullScan(maybePath, { adversarial, patch });
 
   if (asJson) {
     console.log(JSON.stringify(result, null, 2));

@@ -29,10 +29,15 @@
     "tune": "bun run evaluation/scripts/tune-prompts.ts",
     "tune:d1": "bun run evaluation/scripts/tune-prompts.ts --manifest evaluation/datasets/manifests/d1-solana-seeded-v1.json",
     "tune:d2": "bun run evaluation/scripts/tune-prompts.ts --manifest evaluation/datasets/manifests/d2-solana-seeded-v2.json",
-    "pilot": "bun run evaluation/scripts/pilot-runner.ts"
+    "pilot": "bun run evaluation/scripts/pilot-runner.ts",
+    "mcp": "bun run src/mcp/server.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
     "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "zod": "^4.3.6"
   }
 }

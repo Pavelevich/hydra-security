@@ -96,6 +96,7 @@ export interface ScanResult {
   agent_runs?: AgentRunRecord[];
   findings: Finding[];
   adversarial_results?: AdversarialResult[];
+  patch_results?: PatchResult[];
 }
 
 export interface RedTeamAssessment {

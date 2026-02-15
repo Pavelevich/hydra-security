@@ -34,6 +34,10 @@ interface RunRecord {
 interface DaemonOptions {
   host: string;
   port: number;
+  /** Bearer token required for /trigger and /runs endpoints. Read from HYDRA_DAEMON_TOKEN env if not set. */
+  authToken?: string;
+  /** Allowed root paths for scan targets. If set, target_path must be under one of these. */
+  allowedPaths?: string[];
 }
 
 const MAX_STORED_RUNS = 200;
@@ -121,7 +125,7 @@ async function executeRun(runId: string): Promise<void> {
   }
 }
 
-async function handleTrigger(req: IncomingMessage, res: ServerResponse): Promise<void> {
+async function handleTrigger(req: IncomingMessage, res: ServerResponse, allowedPaths?: string[]): Promise<void> {
   let payload: TriggerRequest;
   try {
     payload = (await readJsonBody(req)) as TriggerRequest;
@@ -163,6 +167,11 @@ async function handleTrigger(req: IncomingMessage, res: ServerResponse): Promise
   } catch (error) {
     const message = error instanceof Error ? error.message : "Invalid target path";
     writeJson(res, { error: "invalid_target_path", detail: message }, 400);
+    return;
+  }
+
+  if (!isPathAllowed(targetPath, allowedPaths)) {
+    writeJson(res, { error: "path_not_allowed", detail: "Target path is not in the allowed paths list." }, 403);
     return;
   }
 
@@ -222,7 +231,49 @@ function handleListRuns(res: ServerResponse): void {
   writeJson(res, { runs: ordered });
 }
 
+function checkAuth(req: IncomingMessage, token: string | undefined): boolean {
+  if (!token) return true; // No token configured = no auth required
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) return false;
+  const provided = authHeader.slice("Bearer ".length);
+  // Constant-time comparison to prevent timing attacks
+  if (provided.length !== token.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < provided.length; i++) {
+    mismatch |= provided.charCodeAt(i) ^ token.charCodeAt(i);
+  }
+  return mismatch === 0;
+}
+
+function isPathAllowed(targetPath: string, allowedPaths: string[] | undefined): boolean {
+  if (!allowedPaths || allowedPaths.length === 0) return true;
+  const resolved = path.resolve(targetPath);
+  return allowedPaths.some((allowed) => {
+    const resolvedAllowed = path.resolve(allowed);
+    return resolved === resolvedAllowed || resolved.startsWith(resolvedAllowed + path.sep);
+  });
+}
+
 export function startOrchestratorDaemon(options: DaemonOptions): void {
+  const authToken = options.authToken ?? process.env.HYDRA_DAEMON_TOKEN;
+  const allowedPaths = options.allowedPaths ?? (
+    process.env.HYDRA_ALLOWED_PATHS ? process.env.HYDRA_ALLOWED_PATHS.split(",").map((p) => p.trim()) : undefined
+  );
+
+  if (!authToken) {
+    console.warn(
+      "[daemon] WARNING: No auth token configured. Set HYDRA_DAEMON_TOKEN or pass authToken option. " +
+      "The daemon is accessible without authentication."
+    );
+  }
+
+  if (!allowedPaths) {
+    console.warn(
+      "[daemon] WARNING: No allowed paths configured. Set HYDRA_ALLOWED_PATHS or pass allowedPaths option. " +
+      "Any directory on this machine can be scanned."
+    );
+  }
+
   const server = createServer(async (req, res) => {
     const method = req.method ?? "GET";
     const url = new URL(req.url ?? "/", `http://${options.host}:${options.port}`);
@@ -230,6 +281,12 @@ export function startOrchestratorDaemon(options: DaemonOptions): void {
 
     if (method === "GET" && pathname === "/healthz") {
       writeJson(res, { status: "ok" });
+      return;
+    }
+
+    // All other endpoints require auth
+    if (!checkAuth(req, authToken)) {
+      writeJson(res, { error: "unauthorized" }, 401);
       return;
     }
 
@@ -244,7 +301,7 @@ export function startOrchestratorDaemon(options: DaemonOptions): void {
     }
 
     if (method === "POST" && pathname === "/trigger") {
-      await handleTrigger(req, res);
+      await handleTrigger(req, res, allowedPaths);
       return;
     }
 

@@ -2,11 +2,22 @@ import path from "node:path";
 import { promises as fs } from "node:fs";
 import { dispatchScanners } from "./dispatcher";
 import { aggregateFindings } from "./aggregator";
-import type { ScanResult, ScanTarget } from "../types";
+import { runAdversarialPipeline } from "./adversarial";
+import { runPatchPipeline } from "./patch-pipeline";
+import type { AdversarialResult, PatchResult, ScanResult, ScanTarget } from "../types";
 import { resolveDiffSelection } from "./git-diff";
 import { loadOrCreateThreatModel } from "./threat-model-store";
 
-export interface DiffScanOptions {
+export interface ScanOptions {
+  /** Run adversarial Red/Blue/Judge validation on findings. Requires ANTHROPIC_API_KEY. */
+  adversarial?: boolean;
+  /** Run automated patch generation for confirmed findings. Requires adversarial=true. */
+  patch?: boolean;
+  /** Minimum confidence threshold for adversarial pipeline (default: 50). */
+  minConfidenceForAdversarial?: number;
+}
+
+export interface DiffScanOptions extends ScanOptions {
   baseRef?: string;
   headRef?: string;
   changedFiles?: string[];
@@ -28,7 +39,7 @@ async function normalizeChangedFiles(rootPath: string, changedFiles: string[]): 
   return [...normalized];
 }
 
-export async function runFullScan(rootPath: string): Promise<ScanResult> {
+export async function runFullScan(rootPath: string, options: ScanOptions = {}): Promise<ScanResult> {
   const target: ScanTarget = {
     root_path: path.resolve(rootPath),
     mode: "full"
@@ -38,6 +49,20 @@ export async function runFullScan(rootPath: string): Promise<ScanResult> {
   const started = new Date().toISOString();
   const dispatched = await dispatchScanners(target);
   const findings = aggregateFindings(dispatched.findings);
+
+  let adversarialResults: AdversarialResult[] | undefined;
+  let patchResults: PatchResult[] | undefined;
+
+  if (options.adversarial && findings.length > 0) {
+    adversarialResults = await runAdversarialPipeline(findings, {
+      minConfidenceForAdversarial: options.minConfidenceForAdversarial
+    });
+
+    if (options.patch && adversarialResults.length > 0) {
+      patchResults = await runPatchPipeline(adversarialResults);
+    }
+  }
+
   const completed = new Date().toISOString();
 
   return {
@@ -46,7 +71,9 @@ export async function runFullScan(rootPath: string): Promise<ScanResult> {
     completed_at: completed,
     threat_model: threatModel,
     agent_runs: dispatched.agent_runs,
-    findings
+    findings,
+    adversarial_results: adversarialResults,
+    patch_results: patchResults
   };
 }
 
@@ -96,6 +123,20 @@ export async function runDiffScan(
   const findings = aggregateFindings(dispatched.findings).filter((finding) =>
     changedSet.has(path.resolve(finding.file))
   );
+
+  let adversarialResults: AdversarialResult[] | undefined;
+  let patchResults: PatchResult[] | undefined;
+
+  if (options.adversarial && findings.length > 0) {
+    adversarialResults = await runAdversarialPipeline(findings, {
+      minConfidenceForAdversarial: options.minConfidenceForAdversarial
+    });
+
+    if (options.patch && adversarialResults.length > 0) {
+      patchResults = await runPatchPipeline(adversarialResults);
+    }
+  }
+
   const completed = new Date().toISOString();
 
   return {
@@ -104,6 +145,8 @@ export async function runDiffScan(
     completed_at: completed,
     threat_model: threatModel,
     agent_runs: dispatched.agent_runs,
-    findings
+    findings,
+    adversarial_results: adversarialResults,
+    patch_results: patchResults
   };
 }

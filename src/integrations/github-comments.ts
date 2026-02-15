@@ -8,12 +8,18 @@ interface ExecOutput {
   exitCode: number;
 }
 
-function runGh(args: string[], timeoutMs = 30_000): Promise<ExecOutput> {
+function runGh(args: string[], options?: { input?: string; timeoutMs?: number }): Promise<ExecOutput> {
+  const timeoutMs = options?.timeoutMs ?? 30_000;
   return new Promise((resolve) => {
-    execFile("gh", args, { timeout: timeoutMs, maxBuffer: 5 * 1024 * 1024 }, (error, stdout, stderr) => {
+    const child = execFile("gh", args, { timeout: timeoutMs, maxBuffer: 5 * 1024 * 1024 }, (error, stdout, stderr) => {
       const exitCode = error && "code" in error ? (error.code as number) ?? 1 : 0;
       resolve({ stdout: stdout ?? "", stderr: stderr ?? "", exitCode });
     });
+
+    if (options?.input && child.stdin) {
+      child.stdin.write(options.input);
+      child.stdin.end();
+    }
   });
 }
 
@@ -121,38 +127,29 @@ export async function postPrReview(
     comments
   });
 
-  await runGh([
+  const reviewResult = await runGh([
     "api",
     "--method", "POST",
     `/repos/${owner}/${repo}/pulls/${prNumber}/reviews`,
     "--input", "-"
-  ], 60_000).then(() => {
-    // gh api --input - reads from stdin, but execFile doesn't support stdin easily.
-    // Fall back to individual comments if the review API approach doesn't work.
-  }).catch(() => {});
+  ], { input: reviewBody, timeoutMs: 60_000 });
 
-  // Fallback: post individual comments via gh api
-  for (const comment of comments) {
-    const commentBody = JSON.stringify({
-      body: comment.body,
-      commit_id: commitSha,
-      path: comment.path,
-      line: comment.line,
-      side: "RIGHT"
-    });
-
-    await runGh([
-      "api",
-      "--method", "POST",
-      `/repos/${owner}/${repo}/pulls/${prNumber}/comments`,
-      "--field", `body=${comment.body}`,
-      "--field", `commit_id=${commitSha}`,
-      "--field", `path=${comment.path}`,
-      "--field", `line=${String(comment.line)}`,
-      "--field", `side=RIGHT`
-    ]).catch(() => {
-      // Individual comment may fail if file/line not in PR diff — that's OK
-    });
+  // Only fall back to individual comments if the batch review API failed
+  if (reviewResult.exitCode !== 0) {
+    for (const comment of comments) {
+      await runGh([
+        "api",
+        "--method", "POST",
+        `/repos/${owner}/${repo}/pulls/${prNumber}/comments`,
+        "--field", `body=${comment.body}`,
+        "--field", `commit_id=${commitSha}`,
+        "--field", `path=${comment.path}`,
+        "--field", `line=${String(comment.line)}`,
+        "--field", `side=RIGHT`
+      ]).catch(() => {
+        // Individual comment may fail if file/line not in PR diff — that's OK
+      });
+    }
   }
 }
 

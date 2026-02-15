@@ -41,25 +41,61 @@ async function retestExploitInSandbox(
   }
 }
 
-function applyPatchToSource(source: string, patchDiff: string): string {
-  // Simple heuristic: if the patch contains unified diff markers, try to
-  // extract the "after" lines. For a full implementation this would use a
-  // proper diff-apply library. For now, return the original source with a
-  // comment indicating the patch was applied conceptually.
-  if (patchDiff.includes("@@") && (patchDiff.includes("---") || patchDiff.includes("+++"))) {
-    const afterLines: string[] = [];
-    for (const line of patchDiff.split("\n")) {
-      if (line.startsWith("+") && !line.startsWith("+++")) {
-        afterLines.push(line.slice(1));
-      } else if (!line.startsWith("-") && !line.startsWith("---") && !line.startsWith("@@") && !line.startsWith("diff")) {
-        afterLines.push(line.startsWith(" ") ? line.slice(1) : line);
+function applyPatchToSource(source: string, patchDiff: string): { patched: string; applied: boolean } {
+  // Apply unified diff hunks to source. Returns the patched source and
+  // whether the patch was actually applied (vs returned unchanged).
+  if (!patchDiff.includes("@@") || (!patchDiff.includes("---") && !patchDiff.includes("+++"))) {
+    return { patched: source, applied: false };
+  }
+
+  const sourceLines = source.split("\n");
+  const patchLines = patchDiff.split("\n");
+  let offset = 0;
+  let anyApplied = false;
+
+  for (let i = 0; i < patchLines.length; i++) {
+    const hunkMatch = patchLines[i].match(/^@@ -(\d+)(?:,\d+)? \+\d+(?:,\d+)? @@/);
+    if (!hunkMatch) continue;
+
+    const startLine = parseInt(hunkMatch[1], 10) - 1 + offset;
+    const removeLines: number[] = [];
+    const addLines: string[] = [];
+
+    for (let j = i + 1; j < patchLines.length; j++) {
+      const line = patchLines[j];
+      if (line.startsWith("@@") || line.startsWith("diff ")) break;
+      if (line.startsWith("-") && !line.startsWith("---")) {
+        removeLines.push(j);
+      } else if (line.startsWith("+") && !line.startsWith("+++")) {
+        addLines.push(line.slice(1));
       }
     }
-    if (afterLines.length > 0) {
-      return afterLines.join("\n");
+
+    // Verify context: removed lines must match source at expected position
+    let contextMatches = true;
+    let removeIdx = 0;
+    for (let j = i + 1; j < patchLines.length && removeIdx < removeLines.length; j++) {
+      const line = patchLines[j];
+      if (line.startsWith("@@") || line.startsWith("diff ")) break;
+      if (line.startsWith("-") && !line.startsWith("---")) {
+        const expectedContent = line.slice(1);
+        const actualLine = sourceLines[startLine + removeIdx];
+        if (actualLine === undefined || actualLine !== expectedContent) {
+          contextMatches = false;
+          break;
+        }
+        removeIdx++;
+      }
+    }
+
+    if (contextMatches && (removeLines.length > 0 || addLines.length > 0)) {
+      sourceLines.splice(startLine, removeLines.length, ...addLines);
+      offset += addLines.length - removeLines.length;
+      anyApplied = true;
     }
   }
-  return source;
+
+  return { patched: sourceLines.join("\n"), applied: anyApplied };
 }
 
 export async function runReviewAgent(
@@ -118,11 +154,21 @@ export async function runReviewAgent(
   let exploitRetestPassed: boolean | undefined;
   if (adversarial.red_team?.exploit_code) {
     try {
-      const patchedSource = applyPatchToSource(sourceCode, patch.patch_diff);
-      exploitRetestPassed = await retestExploitInSandbox(
-        patchedSource,
-        adversarial.red_team.exploit_code
-      );
+      const { patched: patchedSource, applied: patchApplied } = applyPatchToSource(sourceCode, patch.patch_diff);
+
+      if (!patchApplied) {
+        // Patch could not be applied to source — cannot verify
+        approved = false;
+        issues.push({
+          severity: "error",
+          description: "Patch verification failed: unified diff could not be applied to the source file. Context lines did not match."
+        });
+      } else {
+        exploitRetestPassed = await retestExploitInSandbox(
+          patchedSource,
+          adversarial.red_team.exploit_code
+        );
+      }
     } catch {
       // Sandbox retest failed — non-fatal
     }
@@ -134,6 +180,14 @@ export async function runReviewAgent(
     issues.push({
       severity: "error",
       description: "Exploit retest: Red Team exploit still succeeds against patched code."
+    });
+  }
+
+  // If sandbox wasn't available but patch was applied, note the gap
+  if (exploitRetestPassed === undefined && adversarial.red_team?.exploit_code) {
+    issues.push({
+      severity: "warning",
+      description: "Exploit retest could not run (sandbox unavailable). Patch approval is based on LLM review only."
     });
   }
 

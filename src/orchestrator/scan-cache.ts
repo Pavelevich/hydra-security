@@ -41,8 +41,11 @@ function contentHash(content: string): string {
   return createHash("sha256").update(content).digest("hex");
 }
 
-function cacheKey(scannerId: string, fileContentHash: string): string {
-  return `${scannerId}:${fileContentHash}`;
+function cacheKey(scannerId: string, filePath: string, fileContentHash: string): string {
+  // Include file path in key to prevent same-content files from cross-contaminating
+  // cached findings (findings include file_path, so different files must have separate entries).
+  const pathHash = createHash("sha256").update(filePath).digest("hex").slice(0, 12);
+  return `${scannerId}:${pathHash}:${fileContentHash}`;
 }
 
 function isExpired(entry: CacheEntry): boolean {
@@ -78,9 +81,9 @@ export class ScanCache {
     }
   }
 
-  lookup(scannerId: string, fileContent: string): Finding[] | undefined {
+  lookup(scannerId: string, filePath: string, fileContent: string): Finding[] | undefined {
     const hash = contentHash(fileContent);
-    const key = cacheKey(scannerId, hash);
+    const key = cacheKey(scannerId, filePath, hash);
     const entry = this.store.entries[key];
 
     if (!entry) {
@@ -105,7 +108,7 @@ export class ScanCache {
 
   put(scannerId: string, filePath: string, fileContent: string, findings: Finding[], ttlMs?: number): void {
     const hash = contentHash(fileContent);
-    const key = cacheKey(scannerId, hash);
+    const key = cacheKey(scannerId, filePath, hash);
 
     this.store.entries[key] = {
       scanner_id: scannerId,
@@ -189,7 +192,7 @@ export async function isCached(
 ): Promise<boolean> {
   try {
     const content = await fs.readFile(filePath, "utf8");
-    return cache.lookup(scannerId, content) !== undefined;
+    return cache.lookup(scannerId, filePath, content) !== undefined;
   } catch {
     return false;
   }

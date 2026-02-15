@@ -4,15 +4,12 @@ import { solanaAccountValidationScanner } from "../agents/scanner/solana-account
 import { solanaCpiScanner } from "../agents/scanner/solana-cpi";
 import { solanaPdaScanner } from "../agents/scanner/solana-pda";
 import { runDeterministicSignalAdapters } from "../agents/scanner/deterministic-signals";
+import { runLlmScanner, LLM_SCANNER_CONFIGS } from "../agents/scanner/llm-scanner";
 
 const scanners = [solanaAccountValidationScanner, solanaCpiScanner, solanaPdaScanner];
 const DEFAULT_MAX_CONCURRENT_AGENTS = 3;
 const DEFAULT_AGENT_TIMEOUT_MS = 90_000;
-
-interface AgentTask {
-  agent_id: string;
-  execute: () => Promise<Finding[]>;
-}
+const LLM_AGENT_TIMEOUT_MS = 300_000;
 
 export interface DispatchResult {
   findings: Finding[];
@@ -58,19 +55,41 @@ async function withTimeout<T>(fn: () => Promise<T>, timeoutMs: number, agentId: 
   }
 }
 
+interface AgentTask {
+  agent_id: string;
+  execute: () => Promise<Finding[]>;
+  timeoutMs?: number;
+}
+
 function buildTasks(target: ScanTarget): AgentTask[] {
   const scannerTasks: AgentTask[] = scanners.map((scanner) => ({
     agent_id: scanner.id,
     execute: () => scanner.scan(target.root_path)
   }));
 
-  return [
+  const tasks: AgentTask[] = [
     ...scannerTasks,
     {
       agent_id: "signal.deterministic.adapters",
       execute: () => runDeterministicSignalAdapters(target.root_path)
     }
   ];
+
+  // Wire LLM-powered scanners when ANTHROPIC_API_KEY is available
+  if (process.env.ANTHROPIC_API_KEY) {
+    for (const config of LLM_SCANNER_CONFIGS) {
+      tasks.push({
+        agent_id: config.scannerId,
+        execute: () => runLlmScanner(target.root_path, {
+          vulnFocus: config.vulnFocus,
+          scannerId: config.scannerId
+        }),
+        timeoutMs: LLM_AGENT_TIMEOUT_MS
+      });
+    }
+  }
+
+  return tasks;
 }
 
 export async function dispatchScanners(target: ScanTarget): Promise<DispatchResult> {
@@ -100,7 +119,7 @@ export async function dispatchScanners(target: ScanTarget): Promise<DispatchResu
       const startedAtMs = Date.now();
 
       try {
-        const taskFindings = await withTimeout(task.execute, agentTimeoutMs, task.agent_id);
+        const taskFindings = await withTimeout(task.execute, task.timeoutMs ?? agentTimeoutMs, task.agent_id);
         record.status = "completed";
         record.finding_count = taskFindings.length;
         findings.push(...taskFindings);

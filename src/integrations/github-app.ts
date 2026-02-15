@@ -8,7 +8,9 @@ import type { ScanResult } from "../types";
 
 export interface GitHubAppConfig {
   webhookSecret: string;
+  /** GitHub App ID. Currently used for identification only. Installation token minting is not yet implemented — API calls use the gh CLI's ambient auth. */
   appId: string;
+  /** GitHub App private key (PEM). Reserved for future installation token minting. Currently unused. */
   privateKey: string;
   host?: string;
   port?: number;
