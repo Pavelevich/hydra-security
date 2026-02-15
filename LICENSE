@@ -1,7 +1,7 @@
-TETSUO CORP. SOURCE-AVAILABLE LICENSE
+AgenC SOURCE-AVAILABLE LICENSE
 Version 1.0, February 2026
 
-Copyright (c) 2026 TETSUO CORP. All rights reserved.
+Copyright (c) 2026 AgenC All rights reserved.
 
 TERMS AND CONDITIONS
 
@@ -24,7 +24,7 @@ or adapted.
 
 2. GRANT OF LICENSE
 
-Subject to the terms of this License, TETSUO CORP. grants you a
+Subject to the terms of this License, AgenC grants you a
 limited, non-exclusive, non-transferable, revocable license to:
 
   a) View and study the source code for personal educational purposes.
@@ -35,7 +35,7 @@ limited, non-exclusive, non-transferable, revocable license to:
 
 3. RESTRICTIONS
 
-You MAY NOT, without prior written authorization from TETSUO CORP.:
+You MAY NOT, without prior written authorization from AgenC:
 
   a) Use the Software or any Derivative Work for Commercial Use.
   b) Sell, sublicense, rent, lease, or lend the Software.
@@ -45,42 +45,42 @@ You MAY NOT, without prior written authorization from TETSUO CORP.:
   e) Remove or alter any copyright notices, license headers, or
      attribution notices in the Software.
   f) Use the Software to compete with products or services offered
-     by TETSUO CORP.
+     by AgenC
   g) Claim ownership of the Software or any Derivative Work.
-  h) Use the name "AgenC", "TETSUO", "TETSUO CORP.", or associated
+  h) Use the name "AgenC", "AgenC Security Swarm", or associated
      trademarks without written permission.
 
 4. INTELLECTUAL PROPERTY
 
 All intellectual property rights in the Software, including but not
 limited to copyrights, patents, trade secrets, and trademarks, are
-and shall remain the exclusive property of TETSUO CORP.
+and shall remain the exclusive property of AgenC
 
 No rights are granted under any patents owned or controlled by
-TETSUO CORP. This License does not grant permission to use the
+AgenC This License does not grant permission to use the
 trade names, trademarks, service marks, or product names of
-TETSUO CORP.
+AgenC
 
 5. CONTRIBUTIONS
 
 Any contributions submitted to this repository shall be subject to
 the terms of this License. By submitting a contribution, you agree
 to assign all intellectual property rights in the contribution to
-TETSUO CORP. and represent that you have the right to do so.
+AgenC and represent that you have the right to do so.
 
 6. NO WARRANTY
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL TETSUO CORP. BE LIABLE FOR ANY
+NONINFRINGEMENT. IN NO EVENT SHALL AgenC BE LIABLE FOR ANY
 CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 7. TERMINATION
 
-This License is effective until terminated. TETSUO CORP. may
+This License is effective until terminated. AgenC may
 terminate this License at any time without notice. Upon termination,
 you must destroy all copies of the Software in your possession.
 
@@ -92,12 +92,12 @@ fail to comply with any of its terms.
 This License shall be governed by and construed in accordance with
 applicable intellectual property laws. Any disputes arising under
 this License shall be resolved in the courts of competent
-jurisdiction as determined by TETSUO CORP.
+jurisdiction as determined by AgenC
 
 9. COMMERCIAL LICENSING
 
-For commercial licensing inquiries, contact: legal@tetsuo.corp
+For commercial licensing inquiries, contact the repository owner.
 
 ---
 
-TETSUO CORP. 2026 - All Rights Reserved
+AgenC 2026 - All Rights Reserved

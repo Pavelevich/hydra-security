@@ -41,4 +41,4 @@ To claim "better," results must meet gates defined in `plan/evaluation-protocol.
 
 ---
 
-TETSUO CORP. 2026
+AgenC 2026
