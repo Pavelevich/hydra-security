@@ -142,22 +142,22 @@
 ## Phase 6: Optimization (Ongoing)
 
 ### 6.1 Prompt Engineering
-- [ ] A/B test different prompts per scanner
-- [ ] Build prompt evaluation dataset
-- [ ] Track recall/precision over time
-- [ ] Domain-specific prompt tuning
+- [x] A/B test different prompts per scanner
+- [x] Build prompt evaluation dataset
+- [x] Track recall/precision over time
+- [x] Domain-specific prompt tuning
 
 ### 6.2 Performance
-- [ ] Cache threat models (only rebuild on major changes)
-- [ ] Incremental scanning (only scan changed files + dependencies)
-- [ ] Agent result caching (don't re-scan unchanged code)
-- [ ] Parallel execution tuning (optimal number of concurrent agents)
+- [x] Cache threat models (only rebuild on major changes)
+- [x] Incremental scanning (only scan changed files + dependencies)
+- [x] Agent result caching (don't re-scan unchanged code)
+- [x] Parallel execution tuning (optimal number of concurrent agents)
 
 ### 6.3 Model Selection
-- [ ] Use fast model (Haiku) for initial scanning
-- [ ] Use deep model (Opus/Sonnet) for Red/Blue/Judge
-- [ ] Evaluate cost vs quality tradeoffs
-- [ ] Implement model routing based on task complexity
+- [x] Use fast model (Haiku) for initial scanning
+- [x] Use deep model (Opus/Sonnet) for Red/Blue/Judge
+- [x] Evaluate cost vs quality tradeoffs
+- [x] Implement model routing based on task complexity
 
 ## Milestones
 
