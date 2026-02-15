@@ -52,6 +52,94 @@ async function resolveTarget(input: string): Promise<{ localPath: string; cleanu
   return { localPath: tmpDir, cleanup, source: input };
 }
 
+// --- Deep analysis: extract source context for each finding ---
+const CONTEXT_LINES = 40;
+
+async function extractFindingContexts(findings: import("../types.js").Finding[]): Promise<string> {
+  const seen = new Set<string>();
+  const blocks: string[] = [];
+
+  for (const f of findings) {
+    const key = `${f.file}:${f.vuln_class}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    let source: string;
+    try {
+      source = await fs.readFile(f.file, "utf8");
+    } catch {
+      continue;
+    }
+
+    const lines = source.split("\n");
+    const start = Math.max(0, f.line - 1 - CONTEXT_LINES);
+    const end = Math.min(lines.length, f.line - 1 + CONTEXT_LINES);
+    const snippet = lines.slice(start, end).map((l, i) => {
+      const lineNum = start + i + 1;
+      const marker = lineNum === f.line ? ">>>" : "   ";
+      return `${marker} ${String(lineNum).padStart(4)} | ${l}`;
+    }).join("\n");
+
+    const relFile = f.file.split("/").slice(-3).join("/");
+    blocks.push(
+      `### Finding: ${f.title}\n` +
+      `- Vulnerability: \`${f.vuln_class}\` | Severity: ${f.severity} | Confidence: ${f.confidence}%\n` +
+      `- Location: \`${relFile}:${f.line}\`\n` +
+      `- Scanner: \`${f.scanner_id}\`\n` +
+      `- Description: ${f.description}\n` +
+      `- Evidence: \`${f.evidence}\`\n\n` +
+      `\`\`\`rust\n${snippet}\n\`\`\``
+    );
+  }
+
+  return blocks.join("\n\n---\n\n");
+}
+
+const DEEP_ANALYSIS_PROMPT = `
+## HYDRA DEEP ANALYSIS — Instructions for Claude
+
+You are now performing adversarial security validation on the findings below.
+For EACH finding, you must act as three separate agents:
+
+### 1. RED TEAM (Attacker)
+- Can this vulnerability be exploited in practice?
+- Write a concrete attack scenario with step-by-step instructions
+- Estimate economic impact (e.g., "drain all funds", "grief users", "negligible")
+- Confidence level (0-100) that this is exploitable
+
+### 2. BLUE TEAM (Defender)
+- What existing mitigations exist in the code? (Anchor constraints, runtime checks, etc.)
+- Is the vulnerable code path actually reachable from an external transaction?
+- Are there environmental protections? (e.g., Solana runtime account locking prevents reentrancy)
+- Recommendation: CONFIRMED / MITIGATED / INFEASIBLE
+
+### 3. JUDGE (Final Verdict)
+- Weigh Red Team vs Blue Team arguments
+- Verdict: CONFIRMED / LIKELY / DISPUTED / FALSE_POSITIVE
+- Final severity: CRITICAL / HIGH / MEDIUM / LOW
+- Final confidence: 0-100%
+- One-paragraph reasoning
+
+### Output Format
+For each finding, produce a table:
+
+| Role | Assessment |
+|------|-----------|
+| Red Team | [exploitability + attack scenario] |
+| Blue Team | [mitigations + reachability analysis] |
+| Judge | **VERDICT** — [reasoning] |
+
+Then at the end, produce a summary table:
+
+| # | Finding | Verdict | Final Severity | Confidence |
+|---|---------|---------|---------------|------------|
+| 1 | ... | CONFIRMED/LIKELY/DISPUTED/FALSE_POSITIVE | ... | ...% |
+
+---
+
+## Findings with Source Code Context
+`;
+
 function buildScanSummary(result: ScanResult): string {
   const parts: string[] = [];
   const agentRuns = result.agent_runs ?? [];
@@ -74,7 +162,7 @@ function buildScanSummary(result: ScanResult): string {
   const skipped: string[] = [];
   if (!hasLlm) skipped.push("LLM scanners (no ANTHROPIC_API_KEY)");
   if (!result.adversarial_results?.length && result.findings.length > 0) {
-    skipped.push("Adversarial validation (set adversarial=true + ANTHROPIC_API_KEY)");
+    skipped.push("Adversarial validation (use deep=true for agent-side analysis, or adversarial=true + ANTHROPIC_API_KEY for server-side)");
   }
   if (!result.patch_results?.length) {
     skipped.push("Patch generation (set patch=true + adversarial=true)");
@@ -111,23 +199,29 @@ server.registerTool(
     description:
       "Run a full Hydra security scan on a Solana/Anchor repository. " +
       "Accepts a local path OR a GitHub URL (e.g. https://github.com/org/repo). " +
-      "Set adversarial=true to activate the Red Team / Blue Team / Judge validation swarm (requires ANTHROPIC_API_KEY). " +
-      "Set patch=true to also generate and verify patches for confirmed findings.",
+      "Set deep=true for adversarial Red/Blue/Judge analysis — this returns source code context " +
+      "with each finding so YOU (the calling agent) can perform the deep analysis directly. " +
+      "No API key needed for deep mode. " +
+      "Alternatively, set adversarial=true with ANTHROPIC_API_KEY for server-side LLM validation.",
     inputSchema: {
       target_path: z
         .string()
         .describe("Local path or GitHub URL (https://github.com/org/repo) of the repository to scan"),
+      deep: z
+        .boolean()
+        .optional()
+        .describe("Return findings with source code context for YOU to perform Red/Blue/Judge adversarial analysis (no API key needed)"),
       adversarial: z
         .boolean()
         .optional()
-        .describe("Run adversarial Red/Blue/Judge validation on findings (requires ANTHROPIC_API_KEY)"),
+        .describe("Run server-side adversarial validation via Anthropic API (requires ANTHROPIC_API_KEY)"),
       patch: z
         .boolean()
         .optional()
-        .describe("Generate and verify patches for confirmed findings (requires adversarial=true)"),
+        .describe("Generate and verify patches for confirmed findings"),
     },
   },
-  async ({ target_path, adversarial, patch }) => {
+  async ({ target_path, deep, adversarial, patch }) => {
     let target;
     try {
       target = await resolveTarget(target_path);
@@ -151,13 +245,22 @@ server.registerTool(
       const report = toMarkdownReport(result);
       const summary = buildScanSummary(result);
 
-      return {
-        content: [
-          ...(target.cleanup ? [{ type: "text" as const, text: `Cloned ${target.source} for scanning.` }] : []),
-          { type: "text" as const, text: summary },
-          { type: "text" as const, text: report },
-        ],
-      };
+      const content: Array<{ type: "text"; text: string }> = [];
+
+      if (target.cleanup) {
+        content.push({ type: "text" as const, text: `Cloned ${target.source} for scanning.` });
+      }
+
+      content.push({ type: "text" as const, text: summary });
+      content.push({ type: "text" as const, text: report });
+
+      // Deep mode: include source context + analysis instructions
+      if (deep && result.findings.length > 0) {
+        const contexts = await extractFindingContexts(result.findings);
+        content.push({ type: "text" as const, text: DEEP_ANALYSIS_PROMPT + "\n" + contexts });
+      }
+
+      return { content };
     } catch (err) {
       return {
         content: [
