@@ -38,6 +38,8 @@ logs/
 # Test artifacts
 coverage/
 .nyc_output/
+evaluation/reports/*.json
+!evaluation/reports/.gitkeep
 
 # Secrets
 *.key

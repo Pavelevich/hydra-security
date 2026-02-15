@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hydra-security.dev/schemas/agent-message.schema.json",
+  "title": "Hydra Agent Message",
+  "type": "object",
+  "required": ["agent_id", "type", "timestamp", "payload"],
+  "properties": {
+    "agent_id": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "candidate_vulnerability",
+        "red_team_evidence",
+        "blue_team_evidence",
+        "judge_verdict",
+        "patch_proposal",
+        "review_result"
+      ]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}

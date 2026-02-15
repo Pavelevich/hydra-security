@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hydra-security.dev/evaluation/schemas/eval-report.schema.json",
+  "title": "Hydra Evaluation Report",
+  "type": "object",
+  "required": ["generated_at", "dataset_id", "systems", "notes"],
+  "properties": {
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "dataset_id": {
+      "type": "string"
+    },
+    "systems": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["system_id", "repos", "totals"],
+        "properties": {
+          "system_id": {
+            "type": "string"
+          },
+          "repos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["repo_id", "tp", "fp", "fn", "precision", "recall"],
+              "properties": {
+                "repo_id": { "type": "string" },
+                "tp": { "type": "integer", "minimum": 0 },
+                "fp": { "type": "integer", "minimum": 0 },
+                "fn": { "type": "integer", "minimum": 0 },
+                "precision": { "type": "number", "minimum": 0, "maximum": 1 },
+                "recall": { "type": "number", "minimum": 0, "maximum": 1 }
+              },
+              "additionalProperties": false
+            }
+          },
+          "totals": {
+            "type": "object",
+            "required": ["tp", "fp", "fn", "precision", "recall"],
+            "properties": {
+              "tp": { "type": "integer", "minimum": 0 },
+              "fp": { "type": "integer", "minimum": 0 },
+              "fn": { "type": "integer", "minimum": 0 },
+              "precision": { "type": "number", "minimum": 0, "maximum": 1 },
+              "recall": { "type": "number", "minimum": 0, "maximum": 1 }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}

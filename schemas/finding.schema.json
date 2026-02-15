@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hydra-security.dev/schemas/finding.schema.json",
+  "title": "Hydra Normalized Finding",
+  "type": "object",
+  "required": [
+    "id",
+    "scanner_id",
+    "vuln_class",
+    "severity",
+    "confidence",
+    "file",
+    "line",
+    "title",
+    "description",
+    "evidence"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 8
+    },
+    "scanner_id": {
+      "type": "string"
+    },
+    "vuln_class": {
+      "type": "string",
+      "enum": [
+        "missing_signer_check",
+        "missing_has_one",
+        "account_type_confusion",
+        "arbitrary_cpi",
+        "cpi_signer_seed_bypass",
+        "cpi_reentrancy",
+        "non_canonical_bump",
+        "seed_collision",
+        "attacker_controlled_seed"
+      ]
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
+    },
+    "confidence": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "file": {
+      "type": "string"
+    },
+    "line": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "evidence": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,21 @@
+{
+  "name": "hydra-security",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Hydra Security - multi-agent security swarm scaffold",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "ci": "bun run typecheck && bun run scan && bun run eval:all",
+    "scan": "bun run src/cli/main.ts scan .",
+    "eval": "bun run evaluation/scripts/run-eval.ts --manifest evaluation/datasets/manifests/d1-solana-seeded-v1.json",
+    "eval:d1": "bun run evaluation/scripts/run-eval.ts --manifest evaluation/datasets/manifests/d1-solana-seeded-v1.json",
+    "eval:d2": "bun run evaluation/scripts/run-eval.ts --manifest evaluation/datasets/manifests/d2-solana-seeded-v2.json",
+    "eval:all": "bun run eval:d1 && bun run eval:d2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}

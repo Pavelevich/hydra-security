@@ -1,5 +1,7 @@
 # Hydra Security
 
+[![CI](https://github.com/Pavelevich/hydra-security/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Pavelevich/hydra-security/actions/workflows/ci.yml)
+
 A research and implementation project for a multi-agent security auditing system with adversarial validation and Solana/Anchor specialization.
 
 ## Project Status: Research & Design Phase
@@ -27,6 +29,18 @@ V1 is intentionally narrow:
 - Three specialized scanners: Account Validation, CPI, PDA
 - Adversarial validation loop: Red Team vs Blue Team vs Judge
 - Patch generation and patch re-validation for confirmed findings
+
+## Scaffold Quickstart
+
+```bash
+bun install
+bun run ci
+```
+
+- `bun run ci` runs the same local validation sequence as CI: typecheck + scan + D1/D2 evaluation.
+- `bun run scan` scans the current repository and prints a markdown report.
+- `bun run eval:d1` runs the seeded D1 benchmark and writes a report to `evaluation/reports/`.
+- `bun run eval:d2` runs the seeded D2 benchmark and writes a report to `evaluation/reports/`.
 
 ## "Better Than Aardvark" Claim Policy
 

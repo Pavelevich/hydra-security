@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0.0",
+  "dataset_id": "d1-solana-seeded-v1",
+  "description": "Seeded Solana/Anchor benchmark dataset for Hydra V1 scanners (Account/CPI/PDA).",
+  "created_at": "2026-02-15",
+  "repos": [
+    {
+      "id": "repo-template-a",
+      "path": "golden_repos/solana_seeded_v1/repo-template-a",
+      "language": "rust",
+      "framework": "anchor",
+      "expected_findings": [
+        {
+          "vuln_class": "missing_signer_check",
+          "severity": "HIGH",
+          "file": "src/lib.rs",
+          "line": 10,
+          "title": "Missing signer check on authority account"
+        },
+        {
+          "vuln_class": "arbitrary_cpi",
+          "severity": "CRITICAL",
+          "file": "src/lib.rs",
+          "line": 16,
+          "title": "Arbitrary CPI target risk"
+        },
+        {
+          "vuln_class": "non_canonical_bump",
+          "severity": "HIGH",
+          "file": "src/lib.rs",
+          "line": 24,
+          "title": "Non-canonical bump handling"
+        }
+      ]
+    },
+    {
+      "id": "repo-template-b",
+      "path": "golden_repos/solana_seeded_v1/repo-template-b",
+      "language": "rust",
+      "framework": "anchor",
+      "expected_findings": []
+    }
+  ]
+}
