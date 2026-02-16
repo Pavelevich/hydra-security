@@ -4,6 +4,11 @@ import { makeFinding } from "../agents/scanner/base";
 const VALID_SEVERITIES = new Set<Severity>(["CRITICAL", "HIGH", "MEDIUM", "LOW"]);
 
 const VALID_VULN_CLASSES = new Set<VulnClass>([
+  "hardcoded_secret",
+  "command_injection",
+  "sql_injection",
+  "xss",
+  "insecure_deserialization",
   "missing_signer_check",
   "missing_has_one",
   "account_type_confusion",

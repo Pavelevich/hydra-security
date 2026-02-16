@@ -1,12 +1,20 @@
 import { randomUUID } from "node:crypto";
+import { existsSync } from "node:fs";
+import path from "node:path";
 import type { AgentRunRecord, Finding, ScanTarget } from "../types";
 import { solanaAccountValidationScanner } from "../agents/scanner/solana-account-validation";
 import { solanaCpiScanner } from "../agents/scanner/solana-cpi";
 import { solanaPdaScanner } from "../agents/scanner/solana-pda";
+import { genericAppSecScanner } from "../agents/scanner/generic-appsec";
 import { runDeterministicSignalAdapters } from "../agents/scanner/deterministic-signals";
-import { runLlmScanner, LLM_SCANNER_CONFIGS } from "../agents/scanner/llm-scanner";
+import {
+  runLlmScanner,
+  GENERIC_LLM_SCANNER_CONFIGS,
+  SOLANA_LLM_SCANNER_CONFIGS
+} from "../agents/scanner/llm-scanner";
 
-const scanners = [solanaAccountValidationScanner, solanaCpiScanner, solanaPdaScanner];
+const solanaScanners = [solanaAccountValidationScanner, solanaCpiScanner, solanaPdaScanner];
+const genericScanners = [genericAppSecScanner];
 const DEFAULT_MAX_CONCURRENT_AGENTS = 3;
 const DEFAULT_AGENT_TIMEOUT_MS = 90_000;
 const LLM_AGENT_TIMEOUT_MS = 300_000;
@@ -61,23 +69,42 @@ interface AgentTask {
   timeoutMs?: number;
 }
 
+type ScannerDomain = "generic" | "solana";
+
+function detectScannerDomain(rootPath: string): ScannerDomain {
+  const forced = process.env.HYDRA_SCAN_DOMAIN?.toLowerCase();
+  if (forced === "generic" || forced === "solana") {
+    return forced;
+  }
+
+  if (existsSync(path.join(rootPath, "Anchor.toml")) || existsSync(path.join(rootPath, "programs"))) {
+    return "solana";
+  }
+
+  return "generic";
+}
+
 function buildTasks(target: ScanTarget): AgentTask[] {
-  const scannerTasks: AgentTask[] = scanners.map((scanner) => ({
+  const domain = detectScannerDomain(target.root_path);
+  const selectedScanners = domain === "solana" ? solanaScanners : genericScanners;
+  const scannerTasks: AgentTask[] = selectedScanners.map((scanner) => ({
     agent_id: scanner.id,
     execute: () => scanner.scan(target.root_path)
   }));
 
-  const tasks: AgentTask[] = [
-    ...scannerTasks,
-    {
+  const tasks: AgentTask[] = [...scannerTasks];
+
+  if (domain === "solana") {
+    tasks.push({
       agent_id: "signal.deterministic.adapters",
       execute: () => runDeterministicSignalAdapters(target.root_path)
-    }
-  ];
+    });
+  }
 
   // Wire LLM-powered scanners when ANTHROPIC_API_KEY is available
   if (process.env.ANTHROPIC_API_KEY) {
-    for (const config of LLM_SCANNER_CONFIGS) {
+    const llmConfigs = domain === "solana" ? SOLANA_LLM_SCANNER_CONFIGS : GENERIC_LLM_SCANNER_CONFIGS;
+    for (const config of llmConfigs) {
       tasks.push({
         agent_id: config.scannerId,
         execute: () => runLlmScanner(target.root_path, {

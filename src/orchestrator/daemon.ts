@@ -38,6 +38,8 @@ interface DaemonOptions {
   authToken?: string;
   /** Allowed root paths for scan targets. If set, target_path must be under one of these. */
   allowedPaths?: string[];
+  /** Allow running daemon without auth token and path allowlist. */
+  allowInsecureDefaults?: boolean;
 }
 
 const MAX_STORED_RUNS = 200;
@@ -88,13 +90,18 @@ async function readJsonBody(req: IncomingMessage): Promise<unknown> {
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 
-async function validateTargetPath(targetPathInput: string): Promise<string> {
+async function resolveDirectoryPath(targetPathInput: string, label: string): Promise<string> {
   const resolved = path.resolve(targetPathInput);
-  const stat = await fs.stat(resolved);
+  const canonical = await fs.realpath(resolved);
+  const stat = await fs.stat(canonical);
   if (!stat.isDirectory()) {
-    throw new Error(`Target path is not a directory: ${resolved}`);
+    throw new Error(`${label} is not a directory: ${canonical}`);
   }
-  return resolved;
+  return canonical;
+}
+
+async function validateTargetPath(targetPathInput: string): Promise<string> {
+  return resolveDirectoryPath(targetPathInput, "Target path");
 }
 
 async function executeRun(runId: string): Promise<void> {
@@ -247,27 +254,47 @@ function checkAuth(req: IncomingMessage, token: string | undefined): boolean {
 
 function isPathAllowed(targetPath: string, allowedPaths: string[] | undefined): boolean {
   if (!allowedPaths || allowedPaths.length === 0) return true;
-  const resolved = path.resolve(targetPath);
   return allowedPaths.some((allowed) => {
-    const resolvedAllowed = path.resolve(allowed);
-    return resolved === resolvedAllowed || resolved.startsWith(resolvedAllowed + path.sep);
+    return targetPath === allowed || targetPath.startsWith(allowed + path.sep);
   });
 }
 
-export function startOrchestratorDaemon(options: DaemonOptions): void {
+export async function startOrchestratorDaemon(options: DaemonOptions): Promise<void> {
+  const allowInsecureDefaults =
+    options.allowInsecureDefaults ?? process.env.HYDRA_ALLOW_INSECURE_DEFAULTS === "1";
   const authToken = options.authToken ?? process.env.HYDRA_DAEMON_TOKEN;
-  const allowedPaths = options.allowedPaths ?? (
+  const configuredAllowedPaths = options.allowedPaths ?? (
     process.env.HYDRA_ALLOWED_PATHS ? process.env.HYDRA_ALLOWED_PATHS.split(",").map((p) => p.trim()) : undefined
   );
+  const normalizedAllowedPaths =
+    configuredAllowedPaths?.map((entry) => entry.trim()).filter((entry) => entry.length > 0) ?? undefined;
+  const allowedPaths =
+    normalizedAllowedPaths && normalizedAllowedPaths.length > 0
+      ? await Promise.all(normalizedAllowedPaths.map((entry) => resolveDirectoryPath(entry, "Allowed path")))
+      : undefined;
 
-  if (!authToken) {
+  if (!allowInsecureDefaults && (!authToken || !allowedPaths)) {
+    const missing: string[] = [];
+    if (!authToken) {
+      missing.push("auth token (HYDRA_DAEMON_TOKEN)");
+    }
+    if (!allowedPaths) {
+      missing.push("allowed paths (HYDRA_ALLOWED_PATHS)");
+    }
+    throw new Error(
+      `[daemon] Refusing insecure defaults. Missing ${missing.join(" and ")}. ` +
+      "Set them or pass --allow-insecure-defaults / HYDRA_ALLOW_INSECURE_DEFAULTS=1."
+    );
+  }
+
+  if (!authToken && allowInsecureDefaults) {
     console.warn(
       "[daemon] WARNING: No auth token configured. Set HYDRA_DAEMON_TOKEN or pass authToken option. " +
       "The daemon is accessible without authentication."
     );
   }
 
-  if (!allowedPaths) {
+  if (!allowedPaths && allowInsecureDefaults) {
     console.warn(
       "[daemon] WARNING: No allowed paths configured. Set HYDRA_ALLOWED_PATHS or pass allowedPaths option. " +
       "Any directory on this machine can be scanned."

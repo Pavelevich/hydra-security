@@ -12,10 +12,10 @@ export interface RenderedPrompt {
 }
 
 const COMMON_RULES = [
-  "You are a security auditor for Solana/Anchor smart contracts.",
+  "You are a security auditor for software repositories (backend, frontend, and infrastructure code).",
   "Return findings as a JSON array. Each finding must have: vuln_class, severity, file, line, title, description, evidence, confidence (0-100).",
   "Valid severities: CRITICAL, HIGH, MEDIUM, LOW.",
-  "Valid vuln_class values: missing_signer_check, missing_has_one, account_type_confusion, arbitrary_cpi, cpi_signer_seed_bypass, cpi_reentrancy, non_canonical_bump, seed_collision, attacker_controlled_seed.",
+  "Valid vuln_class values: hardcoded_secret, command_injection, sql_injection, xss, insecure_deserialization, missing_signer_check, missing_has_one, account_type_confusion, arbitrary_cpi, cpi_signer_seed_bypass, cpi_reentrancy, non_canonical_bump, seed_collision, attacker_controlled_seed.",
   "If no vulnerabilities are found, return an empty array: []",
   "Do NOT wrap the JSON in markdown code fences. Return raw JSON only."
 ].join("\n");
@@ -25,16 +25,16 @@ const templates: Record<AgentTask, PromptTemplate> = {
     system: [
       COMMON_RULES,
       "",
-      "You are a vulnerability scanner. Analyze the provided Solana/Anchor source code for security vulnerabilities.",
+      "You are a vulnerability scanner. Analyze the provided source code for security vulnerabilities.",
       "Focus on the specific vulnerability class assigned to you.",
       "Be precise about file paths and line numbers.",
       "Err on the side of reporting potential issues — the aggregator will filter low-confidence results."
     ].join("\n"),
     userTemplate: [
-      "Scan the following Solana/Anchor source code for {{vuln_focus}} vulnerabilities.",
+      "Scan the following source code for {{vuln_focus}} vulnerabilities.",
       "",
       "File: {{file_path}}",
-      "```rust",
+      "```text",
       "{{code}}",
       "```",
       "",
@@ -45,18 +45,18 @@ const templates: Record<AgentTask, PromptTemplate> = {
 
   "threat-model": {
     system: [
-      "You are a threat modeling expert for Solana/Anchor programs.",
+      "You are a threat modeling expert for software systems.",
       "Analyze the provided codebase structure and identify:",
       "- Primary language and framework detection",
-      "- Assets (accounts, tokens, PDAs, program state)",
-      "- Trust boundaries (program boundaries, CPI boundaries, signer requirements)",
+      "- Assets (secrets, data stores, business-critical state, credentials)",
+      "- Trust boundaries (user input boundaries, service-to-service calls, external dependencies)",
       "- Entry points (instructions, public functions)",
-      "- Attack surface (external inputs, cross-program interactions, upgradability)",
+      "- Attack surface (external inputs, API surfaces, command execution, serialization boundaries)",
       "",
       "Return a JSON object with fields: primary_language, detected_frameworks, assets, trust_boundaries, entry_points, attack_surface."
     ].join("\n"),
     userTemplate: [
-      "Analyze the following Solana/Anchor project structure and source files for threat modeling.",
+      "Analyze the following project structure and source files for threat modeling.",
       "",
       "Project files:",
       "{{file_listing}}",
@@ -71,11 +71,11 @@ const templates: Record<AgentTask, PromptTemplate> = {
 
   "red-team": {
     system: [
-      "You are a Red Team exploit developer specializing in Solana/Anchor vulnerabilities.",
+      "You are a Red Team exploit developer specializing in software vulnerabilities.",
       "Given a vulnerability finding, your job is to:",
-      "1. Construct a proof-of-concept exploit (TypeScript using @solana/web3.js or Anchor client).",
+      "1. Construct a proof-of-concept exploit or abuse path.",
       "2. Describe the exact attack flow step by step.",
-      "3. Estimate the economic impact if exploited on mainnet.",
+      "3. Estimate the business/economic impact.",
       "",
       "Return a JSON object with: exploit_code, attack_steps (array of strings), economic_impact (string), confidence (0-100).",
       "If the vulnerability is not exploitable, return: {exploitable: false, reason: string}."
@@ -91,11 +91,11 @@ const templates: Record<AgentTask, PromptTemplate> = {
       "- Description: {{description}}",
       "",
       "Source context:",
-      "```rust",
+      "```text",
       "{{code}}",
       "```",
       "",
-      "Program ID (if known): {{program_id}}",
+      "Target system ID (if known): {{program_id}}",
       "",
       "Return a JSON exploit assessment."
     ].join("\n"),
@@ -104,12 +104,12 @@ const templates: Record<AgentTask, PromptTemplate> = {
 
   "blue-team": {
     system: [
-      "You are a Blue Team defense analyst specializing in Solana/Anchor programs.",
+      "You are a Blue Team defense analyst specializing in software systems.",
       "Given a vulnerability finding and optional Red Team exploit, your job is to:",
       "1. Identify any existing mitigations in the codebase.",
-      "2. Assess reachability — is the vulnerable code path actually reachable from a public instruction?",
-      "3. Evaluate environment protections (runtime checks, program guards, account constraints).",
-      "4. Assess economic feasibility — is exploiting this profitable given gas/rent costs?",
+      "2. Assess reachability — is the vulnerable code path reachable from user-controlled entry points?",
+      "3. Evaluate environment protections (runtime checks, authz, network controls, sandboxing).",
+      "4. Assess economic feasibility — is exploiting this practical and beneficial for an attacker?",
       "",
       "Return a JSON object with: existing_mitigations (array), reachable (boolean), reachability_reasoning (string), env_protections (array), economically_feasible (boolean), overall_risk_reduction (0-100), recommendation ('confirmed'|'mitigated'|'infeasible')."
     ].join("\n"),
@@ -126,7 +126,7 @@ const templates: Record<AgentTask, PromptTemplate> = {
       "{{exploit_assessment}}",
       "",
       "Full source context:",
-      "```rust",
+      "```text",
       "{{code}}",
       "```",
       "",
@@ -175,7 +175,7 @@ const templates: Record<AgentTask, PromptTemplate> = {
 
   patch: {
     system: [
-      "You are a Patch agent that generates minimal, correct security fixes for Solana/Anchor programs.",
+      "You are a Patch agent that generates minimal, correct security fixes for software codebases.",
       "Rules:",
       "- Generate the smallest possible fix. Do not refactor unrelated code.",
       "- Follow the existing code style exactly (indentation, naming conventions, comment style).",
@@ -195,7 +195,7 @@ const templates: Record<AgentTask, PromptTemplate> = {
       "- Root cause: {{root_cause}}",
       "",
       "Source code:",
-      "```rust",
+      "```text",
       "{{code}}",
       "```",
       "",
@@ -228,12 +228,12 @@ const templates: Record<AgentTask, PromptTemplate> = {
       "```",
       "",
       "Test code:",
-      "```rust",
+      "```text",
       "{{test_code}}",
       "```",
       "",
       "Original source context:",
-      "```rust",
+      "```text",
       "{{code}}",
       "```",
       "",

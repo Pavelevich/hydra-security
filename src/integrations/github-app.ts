@@ -37,10 +37,12 @@ interface WebhookEvent {
 
 function verifySignature(payload: string, signature: string, secret: string): boolean {
   if (!signature.startsWith("sha256=")) return false;
-  const expected = createHmac("sha256", secret).update(payload).digest("hex");
+  const expected = createHmac("sha256", secret).update(payload).digest();
   const actual = signature.slice("sha256=".length);
-  if (expected.length !== actual.length) return false;
-  return timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(actual, "hex"));
+  if (!/^[a-f0-9]{64}$/i.test(actual)) return false;
+  const actualBuffer = Buffer.from(actual, "hex");
+  if (expected.length !== actualBuffer.length) return false;
+  return timingSafeEqual(expected, actualBuffer);
 }
 
 function collectChangedFiles(event: WebhookEvent): string[] {

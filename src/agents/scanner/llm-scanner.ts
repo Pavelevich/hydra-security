@@ -14,6 +14,11 @@ export interface LlmScannerOptions {
 }
 
 const MAX_FILE_SIZE_BYTES = 256_000;
+const GENERIC_EXTENSIONS = [".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".py", ".go", ".java", ".rb", ".php", ".cs"];
+
+function isSolanaScanner(scannerId: string): boolean {
+  return scannerId.includes(".solana.");
+}
 
 export async function runLlmScanner(
   rootPath: string,
@@ -26,7 +31,12 @@ export async function runLlmScanner(
     fallbackModels: route.fallbacks
   });
 
-  const files = await listFilesRecursive(rootPath, (f) => f.endsWith(".rs"));
+  const files = await listFilesRecursive(rootPath, (f) => {
+    if (isSolanaScanner(options.scannerId)) {
+      return f.endsWith(".rs");
+    }
+    return GENERIC_EXTENSIONS.some((ext) => f.endsWith(ext));
+  });
   const findings: Finding[] = [];
 
   for (const filePath of files) {
@@ -64,7 +74,7 @@ export async function runLlmScanner(
   return findings;
 }
 
-export const LLM_SCANNER_CONFIGS = [
+export const SOLANA_LLM_SCANNER_CONFIGS = [
   {
     vulnFocus: "missing signer check, missing has_one constraint, and account type confusion",
     scannerId: "llm.scanner.solana.account-validation"
@@ -78,6 +88,23 @@ export const LLM_SCANNER_CONFIGS = [
     scannerId: "llm.scanner.solana.pda"
   }
 ] as const;
+
+export const GENERIC_LLM_SCANNER_CONFIGS = [
+  {
+    vulnFocus: "hardcoded secrets and credential leakage",
+    scannerId: "llm.scanner.generic.secrets"
+  },
+  {
+    vulnFocus: "command injection and unsafe shell/process execution",
+    scannerId: "llm.scanner.generic.command-injection"
+  },
+  {
+    vulnFocus: "sql injection, xss sinks, and insecure deserialization",
+    scannerId: "llm.scanner.generic.injection-and-deserialization"
+  }
+] as const;
+
+export const LLM_SCANNER_CONFIGS = [...GENERIC_LLM_SCANNER_CONFIGS, ...SOLANA_LLM_SCANNER_CONFIGS] as const;
 
 export async function runAllLlmScanners(
   rootPath: string,

@@ -1,6 +1,11 @@
 export type Severity = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
 
 export type VulnClass =
+  | "hardcoded_secret"
+  | "command_injection"
+  | "sql_injection"
+  | "xss"
+  | "insecure_deserialization"
   | "missing_signer_check"
   | "missing_has_one"
   | "account_type_confusion"

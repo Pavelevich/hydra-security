@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod/v4";
 import path from "node:path";
-import { spawn, execSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { promises as fs } from "node:fs";
 import os from "node:os";
 import { runFullScan, runDiffScan } from "../orchestrator/run-scan.js";
@@ -13,7 +13,7 @@ import type { ScanResult } from "../types.js";
 const PROJECT_ROOT = path.resolve(import.meta.dirname, "../..");
 
 // --- GitHub URL resolution ---
-const GITHUB_URL_RE = /^https?:\/\/github\.com\/([^/]+\/[^/]+?)(?:\.git)?\/?$/;
+const GITHUB_URL_RE = /^https?:\/\/github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+?)(?:\.git)?\/?$/;
 
 function isGitHubUrl(input: string): boolean {
   return GITHUB_URL_RE.test(input);
@@ -22,7 +22,39 @@ function isGitHubUrl(input: string): boolean {
 function repoSlugFromUrl(url: string): string {
   const match = url.match(GITHUB_URL_RE);
   if (!match) throw new Error(`Invalid GitHub URL: ${url}`);
-  return match[1].replace("/", "-");
+  return `${match[1]}-${match[2]}`;
+}
+
+async function gitCloneDepthOne(url: string, destination: string): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const child = spawn("git", ["clone", "--depth", "1", url, destination], {
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    const timeout = setTimeout(() => {
+      child.kill("SIGKILL");
+      reject(new Error("git clone timed out after 120000ms"));
+    }, 120_000);
+    let stderr = "";
+
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString("utf8");
+    });
+
+    child.on("error", (error) => {
+      clearTimeout(timeout);
+      reject(error);
+    });
+
+    child.on("close", (code) => {
+      clearTimeout(timeout);
+      if (code === 0) {
+        resolve();
+        return;
+      }
+      const detail = stderr.trim();
+      reject(new Error(detail ? `git clone failed (${code}): ${detail}` : `git clone failed (${code})`));
+    });
+  });
 }
 
 async function resolveTarget(input: string): Promise<{ localPath: string; cleanup: (() => Promise<void>) | null; source: string }> {
@@ -36,10 +68,7 @@ async function resolveTarget(input: string): Promise<{ localPath: string; cleanu
   await fs.mkdir(tmpDir, { recursive: true });
 
   try {
-    execSync(`git clone --depth 1 ${input} ${tmpDir}`, {
-      stdio: ["ignore", "pipe", "pipe"],
-      timeout: 120_000,
-    });
+    await gitCloneDepthOne(input, tmpDir);
   } catch (err) {
     await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
     throw new Error(`Failed to clone ${input}: ${err instanceof Error ? err.message : String(err)}`);
@@ -55,8 +84,9 @@ async function resolveTarget(input: string): Promise<{ localPath: string; cleanu
 // --- Deep analysis helpers ---
 const CONTEXT_LINES = 40;
 const MAX_SOURCE_BYTES = 80_000; // Cap total source to avoid blowing context
+const SOURCE_EXTENSIONS = [".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".py", ".go", ".java", ".rb", ".php", ".cs", ".rs", ".swift", ".kt", ".scala", ".sh"];
 
-async function listRustFiles(dir: string): Promise<string[]> {
+async function listSourceFiles(dir: string): Promise<string[]> {
   const results: string[] = [];
   async function walk(d: string): Promise<void> {
     let entries;
@@ -65,7 +95,7 @@ async function listRustFiles(dir: string): Promise<string[]> {
       const full = path.join(d, entry.name);
       if (entry.isDirectory() && !entry.name.startsWith(".") && entry.name !== "node_modules" && entry.name !== "target") {
         await walk(full);
-      } else if (entry.isFile() && entry.name.endsWith(".rs")) {
+      } else if (entry.isFile() && SOURCE_EXTENSIONS.some((ext) => entry.name.endsWith(ext))) {
         results.push(full);
       }
     }
@@ -103,7 +133,7 @@ async function extractFindingContexts(findings: import("../types.js").Finding[])
       `- Scanner: \`${f.scanner_id}\`\n` +
       `- Description: ${f.description}\n` +
       `- Evidence: \`${f.evidence}\`\n\n` +
-      `\`\`\`rust\n${snippet}\n\`\`\``
+      `\`\`\`text\n${snippet}\n\`\`\``
     );
   }
 
@@ -111,7 +141,7 @@ async function extractFindingContexts(findings: import("../types.js").Finding[])
 }
 
 async function extractAllSources(rootPath: string): Promise<string> {
-  const files = await listRustFiles(rootPath);
+  const files = await listSourceFiles(rootPath);
   const blocks: string[] = [];
   let totalBytes = 0;
 
@@ -127,7 +157,7 @@ async function extractAllSources(rootPath: string): Promise<string> {
 
     const relFile = filePath.replace(rootPath + "/", "");
     const numbered = source.split("\n").map((l, i) => `${String(i + 1).padStart(4)} | ${l}`).join("\n");
-    blocks.push(`### \`${relFile}\` (${source.split("\n").length} lines)\n\n\`\`\`rust\n${numbered}\n\`\`\``);
+    blocks.push(`### \`${relFile}\` (${source.split("\n").length} lines)\n\n\`\`\`text\n${numbered}\n\`\`\``);
   }
 
   return blocks.join("\n\n---\n\n");
@@ -145,7 +175,7 @@ For EACH finding, act as three agents:
 
 ### BLUE TEAM (Defender)
 - What mitigations exist? Is the code path reachable?
-- Environmental protections (Solana runtime, Anchor constraints)?
+- Environmental protections (runtime checks, authz, network controls, sandboxing)?
 - Recommendation: CONFIRMED / MITIGATED / INFEASIBLE
 
 ### JUDGE (Verdict)
@@ -173,34 +203,26 @@ You must now perform a comprehensive manual security audit of the source code be
 
 ### Analyze for these vulnerability classes:
 
-**Account Validation**
-- Missing signer checks on privileged operations
-- Missing owner/authority validation (has_one, constraint)
-- Account type confusion (wrong account types)
-- Missing account initialization checks
+**Secrets & Credentials**
+- Hardcoded secrets / API keys / tokens
+- Insecure secret handling in config or source
 
-**Cross-Program Invocation (CPI)**
-- Arbitrary CPI targets (invoke with user-supplied program ID)
-- CPI reentrancy (state mutation before invoke)
-- Signer seed bypass in invoke_signed
+**Injection**
+- SQL injection via string-built queries
+- Command injection via shell/process execution
+- XSS via unsafe HTML sinks
 
-**PDA Security**
-- Non-canonical bump usage
-- Seed collision / missing domain separation
-- Attacker-controlled seed components
+**Deserialization & Parsing**
+- Unsafe deserialization of untrusted data
+- YAML/pickle/object deserialization abuse paths
+
+**Auth & Access Control**
+- Missing authentication/authorization checks
+- Broken trust boundaries between components
 
 **Business Logic**
-- Incorrect math (overflow, rounding, precision loss)
-- Missing access controls on claim/withdraw/transfer
-- Timestamp manipulation vulnerabilities
-- Token amount validation (can user drain more than entitled?)
-- Vesting schedule bypass possibilities
-- Missing checks on account closure / rent reclaim
-
-**Token Security**
-- Missing token program ownership checks
-- Mint authority validation
-- Decimal handling errors
+- Privilege escalation paths
+- Broken invariants, unsafe defaults, or abuseable workflows
 
 ### Output Format
 
@@ -284,7 +306,7 @@ server.registerTool(
   "hydra_scan",
   {
     description:
-      "Run a full Hydra security scan on a Solana/Anchor repository. " +
+      "Run a full Hydra security scan on a repository (general appsec by default, Solana profile when detected). " +
       "Accepts a local path OR a GitHub URL (e.g. https://github.com/org/repo). " +
       "Set deep=true for adversarial Red/Blue/Judge analysis — this returns source code context " +
       "with each finding so YOU (the calling agent) can perform the deep analysis directly. " +
@@ -562,6 +584,13 @@ server.registerTool(
     const hasApiKey = !!process.env.ANTHROPIC_API_KEY;
     const scanners = [
       {
+        id: "scanner.generic.appsec",
+        type: "pattern",
+        active: true,
+        vuln_classes: ["hardcoded_secret", "command_injection", "sql_injection", "xss", "insecure_deserialization"],
+        description: "Generic application security scanner for common issues in web/backend codebases.",
+      },
+      {
         id: "scanner.solana.account-validation",
         type: "pattern",
         active: true,
@@ -595,6 +624,27 @@ server.registerTool(
         active: hasApiKey,
         vuln_classes: ["missing_signer_check", "missing_has_one", "account_type_confusion"],
         description: "LLM-powered deep analysis of account validation patterns. Requires ANTHROPIC_API_KEY.",
+      },
+      {
+        id: "llm.scanner.generic.secrets",
+        type: "llm",
+        active: hasApiKey,
+        vuln_classes: ["hardcoded_secret"],
+        description: "LLM-powered deep analysis of credential leakage patterns. Requires ANTHROPIC_API_KEY.",
+      },
+      {
+        id: "llm.scanner.generic.command-injection",
+        type: "llm",
+        active: hasApiKey,
+        vuln_classes: ["command_injection"],
+        description: "LLM-powered deep analysis of command execution risks. Requires ANTHROPIC_API_KEY.",
+      },
+      {
+        id: "llm.scanner.generic.injection-and-deserialization",
+        type: "llm",
+        active: hasApiKey,
+        vuln_classes: ["sql_injection", "xss", "insecure_deserialization"],
+        description: "LLM-powered deep analysis of injection and deserialization risks. Requires ANTHROPIC_API_KEY.",
       },
       {
         id: "llm.scanner.solana.cpi",

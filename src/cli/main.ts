@@ -33,7 +33,7 @@ function usage(): string {
     "  hydra-audit diff [targetPath] [--base-ref ref] [--head-ref ref] [--json] [--sarif path]",
     "  hydra-audit report <scan-result.json> [--format markdown|json|sarif] [--output path]",
     "  hydra-audit config [--show] [--set key=value] [--init]",
-    "  hydra-audit daemon [--host 127.0.0.1] [--port 8787]",
+    "  hydra-audit daemon [--host 127.0.0.1] [--port 8787] [--allow-insecure-defaults]",
     "  hydra-audit github-app [--port 3000]",
     "  hydra-audit help",
     "",
@@ -55,6 +55,7 @@ function usage(): string {
     "  hydra-audit config --init",
     "  hydra-audit config --set min_confidence=60",
     "  hydra-audit daemon --port 8787",
+    "  hydra-audit daemon --port 8787 --allow-insecure-defaults",
     "  hydra-audit github-app --port 3000"
   ].join("\n");
 }
@@ -184,7 +185,7 @@ async function handleConfig(args: string[]): Promise<void> {
     }
 
     const defaultConfig: HydraConfig = {
-      scanners: ["account-validation", "cpi-security", "pda-security"],
+      scanners: ["generic-appsec"],
       min_confidence: 50,
       min_severity: "LOW"
     };
@@ -315,12 +316,14 @@ async function main(): Promise<void> {
       const host = getOptionValue(args, "--host") ?? "127.0.0.1";
       const portRaw = getOptionValue(args, "--port") ?? "8787";
       const port = Number(portRaw);
+      const allowInsecureDefaults =
+        args.includes("--allow-insecure-defaults") || args.includes("--allow-insecure");
       if (!Number.isInteger(port) || port <= 0 || port > 65535) {
         console.error(`Invalid --port value: ${portRaw}`);
         process.exitCode = 1;
         return;
       }
-      startOrchestratorDaemon({ host, port });
+      await startOrchestratorDaemon({ host, port, allowInsecureDefaults });
       return;
     }
     case "github-app":

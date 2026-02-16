@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/Solana-Anchor-9945FF?style=flat-square&logo=solana&logoColor=white" alt="Solana Anchor" />
+  <img src="https://img.shields.io/badge/Domain-General_AppSec-0A7B83?style=flat-square" alt="General AppSec" />
   <img src="https://img.shields.io/badge/Runtime-Bun-000000?style=flat-square&logo=bun&logoColor=white" alt="Bun" />
   <img src="https://img.shields.io/badge/Language-TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
   <a href="https://github.com/Pavelevich/hydra-security/actions/workflows/ci.yml"><img src="https://github.com/Pavelevich/hydra-security/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
@@ -7,7 +7,7 @@
 
 # Hydra Security
 
-**Multi-agent security auditing system for Solana/Anchor smart contracts.**
+**Multi-agent security auditing system for general software repositories (with Solana profile support).**
 
 Hydra deploys specialized scanner agents, validates findings through an adversarial Red Team / Blue Team / Judge pipeline, and generates verified patches — all orchestrated as a concurrent agent swarm.
 
@@ -22,10 +22,10 @@ Hydra deploys specialized scanner agents, validates findings through an adversar
                            |
               +------------+------------+
               |            |            |
-         Account       CPI          PDA           LLM Scanners
-        Validation   Scanner      Scanner        (when API key set)
-              |            |            |              |
-              +------------+------------+--------------+
+         Generic      Domain-Specific     LLM Scanners
+         Scanner         Scanners         (when API key set)
+              |               |                 |
+              +---------------+-----------------+
                            |
                     Finding Aggregation
                            |
@@ -43,11 +43,10 @@ Hydra deploys specialized scanner agents, validates findings through an adversar
                     Final Report (Markdown / SARIF / JSON)
 ```
 
-**Scanner Agents** detect domain-specific vulnerability classes in parallel:
-- **Account Validation** — missing signer checks, `has_one` constraints, type confusion
-- **CPI** — arbitrary cross-program invocation, signer seed bypass, reentrancy
-- **PDA** — non-canonical bumps, seed collisions, attacker-controlled seeds
-- **LLM-powered scanners** — same 3 domains via Claude API when `ANTHROPIC_API_KEY` is set
+**Scanner Agents** detect vulnerabilities in parallel:
+- **Generic AppSec scanner** — hardcoded secrets, command injection, SQL injection, XSS sinks, insecure deserialization
+- **Domain-specific scanners** — optional profile packs (current built-in: Solana account/CPI/PDA checks)
+- **LLM-powered scanners** — deep semantic analysis for the active domain when `ANTHROPIC_API_KEY` is set
 
 **Adversarial Validation** filters false positives through a 3-agent debate:
 1. **Red Team** crafts exploit scenarios for each finding
@@ -70,8 +69,8 @@ bun install
 # Run full CI (typecheck + scan + eval benchmarks)
 bun run ci
 
-# Scan a Solana project
-bun run src/cli/main.ts scan /path/to/solana-project
+# Scan any repository
+bun run src/cli/main.ts scan /path/to/repository
 
 # Scan with adversarial validation + patch generation (requires ANTHROPIC_API_KEY)
 bun run src/cli/main.ts scan /path/to/project --adversarial --patch
@@ -197,8 +196,9 @@ bun run eval:gates    # Check V1 quality gates
 | Variable | Purpose | Default |
 |----------|---------|---------|
 | `ANTHROPIC_API_KEY` | Enables LLM-powered scanners and adversarial pipeline | — |
-| `HYDRA_DAEMON_TOKEN` | Bearer token for daemon API authentication | — (warns if unset) |
-| `HYDRA_ALLOWED_PATHS` | Comma-separated allowlist for daemon scan targets | — (warns if unset) |
+| `HYDRA_DAEMON_TOKEN` | Bearer token for daemon API authentication | required by default |
+| `HYDRA_ALLOWED_PATHS` | Comma-separated allowlist for daemon scan targets | required by default |
+| `HYDRA_SCAN_DOMAIN` | Force scanner domain (`generic` or `solana`) instead of auto-detection | auto |
 | `HYDRA_MAX_CONCURRENT_AGENTS` | Max scanner agents running in parallel | `3` |
 | `HYDRA_AGENT_TIMEOUT_MS` | Timeout per scanner agent (ms) | `90000` |
 | `HYDRA_LLM_BASE_URL` | Override Anthropic API base URL | `https://api.anthropic.com` |
@@ -257,7 +257,7 @@ docker/               # Hardened sandbox container
 | Document | Description |
 |----------|-------------|
 | [Swarm Architecture](./architecture/swarm-architecture.md) | Multi-agent system design |
-| [Solana Agents](./architecture/solana-agents.md) | Domain-specific scanner design |
+| [Solana Agents](./architecture/solana-agents.md) | Optional Solana domain scanner design |
 | [Sandbox Security](./architecture/sandbox-security-spec.md) | Container isolation spec |
 | [Implementation Plan](./plan/implementation-plan.md) | Delivery roadmap |
 | [V1 Scope Lock](./plan/v1-scope-lock.md) | Scope, non-goals, done criteria |
